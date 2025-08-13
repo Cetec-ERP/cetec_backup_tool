@@ -21,6 +21,8 @@ app.use((req, res, next) => {
 
 // Proxy endpoint for CETEC ERP API
 app.get("/api/cetec/customer", async (req, res) => {
+  let cetecUrl = ''; // Declare outside try block for error handling
+  
   try {
     const { id, name, external_key, columns, preshared_token } = req.query;
     
@@ -45,7 +47,7 @@ app.get("/api/cetec/customer", async (req, res) => {
       apiUrl = `https://${apiUrl}`;
     }
     
-    const cetecUrl = `${apiUrl}/api/customer?${queryParams.toString()}`;
+    cetecUrl = `${apiUrl}/api/customer?${queryParams.toString()}`;
     console.log('Proxying request to:', cetecUrl);
     
     const response = await axios.get(cetecUrl, {

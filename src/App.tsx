@@ -67,13 +67,16 @@ function App() {
 
       {!loading && !error && data && (
         <DataTable 
-          data={data}
+          data={data.filter((customer: any) => {
+            // Filter out customers where ok_to_bill is null, 0, or empty string
+            const okToBill = customer.ok_to_bill;
+            return okToBill !== null && okToBill !== 0 && okToBill !== '';
+          })}
           title="Customers"
           columns={[
             'id',
             'name',
-            'num_prod_users',
-            'num_full_users',
+            'total_users',
             'domain',
             'ok_to_bill',
             'priority_support',
