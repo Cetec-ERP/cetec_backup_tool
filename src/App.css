@@ -1,42 +1,95 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/* App Container */
+.app-container {
+  background-color: #ffffff;
+  min-height: 100vh;
+  width: 100vw;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+/* Header */
+.app-header {
+  color: #2c3e50;
+  margin-bottom: 30px;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Button Container */
+.button-container {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 20px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Main Button */
+.backup-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.backup-button:hover {
+  background-color: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-.card {
-  padding: 2em;
+/* Button Description */
+.button-description {
+  margin-top: 15px;
+  color: #6c757d;
+  font-size: 14px;
+  font-style: italic;
 }
 
-.read-the-docs {
-  color: #888;
+/* Loading Container */
+.loading-container {
+  text-align: center;
+  padding: 20px;
+  color: #6c757d;
+  font-size: 18px;
+}
+
+/* Error Container */
+.error-container {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 15px;
+  border-radius: 4px;
+  border: 1px solid #f5c6cb;
+  margin-bottom: 20px;
+}
+
+/* Data Container */
+.data-container {
+  width: 100%;
+}
+
+.data-header {
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+/* JSON Data Display */
+.json-display {
+  background-color: #f8f9fa;
+  color: #212529;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  overflow: auto;
+  max-height: 500px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: Monaco, Menlo, "Ubuntu Mono", monospace;
+  width: 100%;
+  box-sizing: border-box;
 }
