@@ -1,130 +1,170 @@
 # Running Both Frontend and Backend Servers
 
-This guide explains how to run both your React frontend and Node.js backend simultaneously.
+This guide explains how to run both the React frontend and Node.js backend servers simultaneously.
 
-## Quick Start
+## 🚀 **Quick Start**
 
-To run both servers at the same time, use:
-
+### **Option 1: Enhanced Concurrently (Recommended)**
 ```bash
 npm run dev:full
 ```
+This uses an improved `concurrently` configuration with better signal handling.
 
-This will start:
-- **Backend**: Node.js server on port 3001
-- **Frontend**: React app on port 5173 (Vite default)
-
-## Individual Commands
-
-You can also run them separately in different terminals:
-
-### Terminal 1 - Backend Server
+### **Option 2: Custom Process Manager (Most Reliable)**
 ```bash
-npm run server
+npm run dev:custom
+```
+This uses a custom Node.js script that provides the most reliable process management and signal handling.
+
+### **Option 3: Manual Port Cleanup**
+If you encounter port conflicts:
+```bash
+npm run kill:ports
+npm run dev:full
 ```
 
-### Terminal 2 - Frontend App
+All options will start both the frontend (Vite) and backend (Express) servers.
+
+## 🔧 **Individual Server Commands**
+
+### **Frontend Only (Vite)**
 ```bash
 npm run dev
 ```
+- Runs on: http://localhost:5173
+- Hot reload enabled
+- React development server
 
-## What Each Command Does
+### **Backend Only (Express)**
+```bash
+npm run server
+```
+- Runs on: http://localhost:3001
+- CETEC API proxy
+- MySQL database integration
 
-- **`npm run dev`**: Starts only the React frontend (Vite dev server)
-- **`npm run server`**: Starts only the Node.js backend server
-- **`npm run dev:full`**: Starts both servers concurrently using the `concurrently` package
+## 🌐 **API Endpoints**
 
-## Server Ports
+### **Backend API Endpoint**
+- **URL**: `/api/cetec/customer`
+- **Method**: GET
+- **Query Parameters**:
+  - `preshared_token` (required): Your CETEC API token
+  - `id` (optional): Customer ID filter
+  - `name` (optional): Customer name filter
+  - `external_key` (optional): External key filter
+  - `columns` (optional): Specific columns to return
+  - `filter_billing` (optional): Set to 'true' to filter by ok_to_bill status
 
-- **Backend**: http://localhost:3001
-- **Frontend**: http://localhost:5173
-- **Backend API Endpoint**: http://localhost:3001/api/cetec/customer
+### **Response Format**
+The backend now returns enriched data with MySQL database verification:
+```json
+{
+  "customers": [
+    {
+      "id": 123,
+      "name": "Customer Name",
+      "domain": "customer.com",
+      "database_exists": true,
+      "ok_to_bill": 1,
+      // ... other fields
+    }
+  ],
+  "metadata": {
+    "total_customers": 344,
+    "mysql_enabled": true,
+    "timestamp": "2025-01-13T..."
+  }
+}
+```
 
-## Environment Configuration
+## 🔐 **Environment Variables**
 
-You can use a single `.env` file for both servers, or separate them. Here are both approaches:
-
-### Option 1: Single .env File (Recommended)
-
-Create one `.env` file in your project root:
+### **Required Variables**
+Create a `.env` file in your project root with these variables:
 
 ```bash
-# Backend Configuration
+# Server Configuration
 PORT=3001
+
+# CETEC API Configuration
 API_URL=https://yourdomain.cetecerp.com
 
-# Frontend Configuration (Vite requires VITE_ prefix)
+# Frontend Configuration (Vite will use these)
 VITE_CETEC_DOMAIN=yourdomain.cetecerp.com
-VITE_PRESHARED_TOKEN=your_actual_token_here
-VITE_API_PROTOCOL=http
+VITE_PRESHARED_TOKEN=your_preshared_token_here
+VITE_API_PROTOCOL=https
+
+# MySQL Database Configuration
+# Note: We don't specify a database since we're checking for database existence
+MYSQL_HOST=your_mysql_host
+MYSQL_USER=your_mysql_username
+MYSQL_PASSWORD=your_mysql_password
+# MYSQL_DATABASE=not_needed (we're checking if databases exist, not connecting to one)
+MYSQL_PORT=3306  # Optional - MySQL default is 3306
 ```
 
-**How it works:**
-- **Backend** (`server.js`): Reads `PORT`, `API_URL`
-- **Frontend** (`src/config.ts`): Reads `VITE_CETEC_DOMAIN`, `VITE_PRESHARED_TOKEN`, `VITE_API_PROTOCOL`
+### **Important Notes**
+- **Vite Variables**: Only variables prefixed with `VITE_` are accessible in the frontend
+- **Backend Variables**: Node.js can access any environment variable
+- **MySQL Security**: Database credentials are only accessible on the backend
+- **API_URL**: Should be the base domain (e.g., `https://internal.cetecerp.com`)
 
-### Option 2: Separate Files
+## 🗄️ **MySQL Integration**
 
-**Backend** (`.env`):
+The backend now automatically checks if a MySQL database exists for each customer's domain:
+
+- **Query**: `SHOW DATABASES LIKE '[domain]'`
+- **Result**: Adds `database_exists` field to each customer record
+- **Error Handling**: Continues processing even if MySQL connection fails
+- **Performance**: Processes all customers sequentially (manageable for 344 records)
+
+### **Database Existence Values**
+- `true`: Database exists
+- `false`: Database does not exist
+- `null`: MySQL error occurred (connection failed, etc.)
+
+## 🚨 **Troubleshooting**
+
+### **Common Issues**
+
+1. **Port Already in Use**
+   ```bash
+   lsof -ti:3001 | xargs kill -9  # Kill process on port 3001
+   lsof -ti:5173 | xargs kill -9  # Kill process on port 5173
+   ```
+
+2. **MySQL Connection Failed**
+   - Check your `.env` file has correct MySQL credentials
+   - Verify MySQL server is running and accessible
+   - Check firewall/network settings
+
+3. **CORS Errors**
+   - Ensure backend is running on port 3001
+   - Check that frontend is making requests to `http://localhost:3001`
+
+4. **Environment Variables Not Loading**
+   - Restart your server after updating `.env`
+   - Verify `.env` file is in the project root
+   - Check for syntax errors in `.env` file
+
+### **Server Status Check**
 ```bash
-PORT=3001
-API_URL=https://yourdomain.cetecerp.com
+# Check if servers are running
+lsof -i :3001  # Backend
+lsof -i :5173  # Frontend
 ```
 
-**Frontend** (`.env.local`):
-```bash
-VITE_CETEC_DOMAIN=yourdomain.cetecerp.com
-VITE_PRESHARED_TOKEN=your_actual_token_here
-VITE_API_PROTOCOL=http
-```
+## 📝 **Development Workflow**
 
-### Why VITE_ Prefix?
+1. **Start Development**: `npm run dev:full`
+2. **Make Changes**: Edit files in `src/` or `server.js`
+3. **Auto-Reload**: Frontend automatically reloads, backend requires restart
+4. **Restart Backend**: Stop and restart with `npm run server` if needed
+5. **View Logs**: Check terminal for both frontend and backend logs
 
-Vite only exposes environment variables prefixed with `VITE_` to the frontend for security reasons. This prevents accidentally exposing sensitive backend variables to the client.
+## 🔄 **Restarting Servers**
 
-## How It Works
-
-1. **Backend Server** (`server.js`):
-   - Runs on port 3001
-   - Handles CORS for the React app
-   - Provides API endpoints
-   - Can proxy requests to external APIs if needed
-
-2. **Frontend App** (`src/App.tsx`):
-   - Runs on port 5173 (Vite default)
-   - Makes API calls to your CETEC ERP system
-   - Can also call your backend server if needed
-
-## Troubleshooting
-
-### Port Already in Use
-If you get "port already in use" errors:
-- Check what's running on port 3001: `lsof -i :3001`
-- Kill the process: `kill -9 <PID>`
-- Or change the port in your `.env` file
-
-### CORS Issues
-The backend server is configured with CORS headers for the React app. If you still have issues:
-- Check that the backend is running on port 3001
-- Verify the CORS headers in `server.js`
-- Check browser console for CORS errors
-
-### Concurrently Not Working
-If `npm run dev:full` fails:
-- Make sure `concurrently` is installed: `npm install concurrently`
-- Try running the servers individually in separate terminals
-
-## Development Workflow
-
-1. **Start both servers**: `npm run dev:full`
-2. **Make changes to React code**: Auto-reloads in browser
-3. **Make changes to server code**: Restart backend server (Ctrl+C, then `npm run server`)
-4. **View logs**: Both servers show logs in the same terminal when using `dev:full`
-
-## Production
-
-For production, you'll want to:
-- Build the React app: `npm run build`
-- Serve static files from the backend
-- Use environment variables for production URLs
-- Remove CORS headers for same-origin deployment
+- **Frontend**: Automatically restarts on file changes
+- **Backend**: Restart manually after changes to `server.js` or `.env`
+- **Full Restart**: Stop both with `Ctrl+C`, then run `npm run dev:full` again

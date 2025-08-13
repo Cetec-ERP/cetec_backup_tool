@@ -8,21 +8,36 @@ function App() {
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [useMySQL, setUseMySQL] = useState(false);
 
   const startBackupProcess = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      // Make request with just the preshared token
-      const url = `http://localhost:3001/api/cetec/customer?preshared_token=${config.presharedToken}`;
-      console.log('Starting backup process:', url);
+      // Choose endpoint based on MySQL preference
+      const endpoint = useMySQL ? 'api/cetec/customer' : 'api/cetec/customer/fast';
+      const url = `http://localhost:3001/${endpoint}?preshared_token=${config.presharedToken}`;
+      
+      console.log(`Starting backup process: ${url} (MySQL: ${useMySQL ? 'enabled' : 'disabled'})`);
       
       const response = await axios.get(url, {
-        timeout: 10000,
+        timeout: 15000, // Increased timeout for MySQL operations
       });
       
-      setData(response.data);
+      // Handle the new enriched data structure
+      if (response.data && response.data.customers) {
+        setData(response.data.customers);
+        console.log(`Received ${response.data.customers.length} customers with ${useMySQL ? 'MySQL enrichment' : 'API data only'}`);
+        if (response.data.metadata) {
+          console.log('Processing metadata:', response.data.metadata);
+        }
+      } else {
+        // Fallback for old data structure
+        setData(response.data);
+        console.log('Received data in legacy format');
+      }
+      
       setLoading(false);
     } catch (err: any) {
       console.error('Error during backup process:', err);
@@ -42,20 +57,40 @@ function App() {
       </h1>
       
       <div className="button-container">
+        <div className="controls-row">
+          <label className="mysql-toggle">
+            <input
+              type="checkbox"
+              checked={useMySQL}
+              onChange={(e) => setUseMySQL(e.target.checked)}
+            />
+            <span>Enable MySQL Database Checking</span>
+          </label>
+        </div>
+        
         <button 
           className="backup-button"
           onClick={handleSubmit}
         >
           Fetch Customer Data
         </button>
+        
         <p className="button-description">
-          Click to fetch a list of active customers
+          {useMySQL 
+            ? 'Click to fetch customers with database verification (slower but more complete)'
+            : 'Click to fetch customers quickly (API data only)'
+          }
         </p>
       </div>
 
       {loading && (
         <div className="loading-container">
-          <p>Processing request...</p>
+          <p>
+            {useMySQL 
+              ? 'Processing request and checking databases...'
+              : 'Processing request...'
+            }
+          </p>
         </div>
       )}
       
@@ -72,12 +107,13 @@ function App() {
             const okToBill = customer.ok_to_bill;
             return okToBill !== null && okToBill !== 0 && okToBill !== '';
           })}
-          title="Customers"
+          title={`Customers${useMySQL ? ' (with Database Verification)' : ' (with Hosting Status)'}`}
           columns={[
             'id',
             'name',
             'total_users',
             'domain',
+            'database_exists',
             'ok_to_bill',
             'priority_support',
             'resident_hosting',

@@ -25,6 +25,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, title = "Data", columns }) 
       'num_full_users': 'Full Users',
       'total_users': 'Total Users',
       'domain': 'Domain',
+      'database_exists': 'Database Exists',
       'ok_to_bill': 'OK to Bill',
       'priority_support': 'Priority Support',
       'resident_hosting': 'Resident Hosting',
@@ -82,13 +83,36 @@ const DataTable: React.FC<DataTableProps> = ({ data, title = "Data", columns }) 
             {data.map((item, index) => (
               <tr key={index} className="table-row">
                 {allKeys.map(key => {
-                  const value = key === 'total_users' 
-                    ? (() => {
-                        const prodUsers = parseInt(getValue(item, 'num_prod_users')) || 0;
-                        const fullUsers = parseInt(getValue(item, 'num_full_users')) || 0;
-                        return prodUsers + fullUsers;
-                      })()
-                    : getValue(item, key);
+                  let value;
+                  
+                  if (key === 'total_users') {
+                    const prodUsers = parseInt(getValue(item, 'num_prod_users')) || 0;
+                    const fullUsers = parseInt(getValue(item, 'num_full_users')) || 0;
+                    value = prodUsers + fullUsers;
+                  } else if (key === 'database_exists') {
+                    const dbExists = item[key];
+                    if (dbExists === true) {
+                      value = '✅ Yes';
+                    } else if (dbExists === false) {
+                      value = '❌ No';
+                    } else if (dbExists === 'resident_hosting') {
+                      value = '🏠 Resident Hosting';
+                    } else if (dbExists === 'itar_hosting') {
+                      value = '🔒 ITAR Hosting';
+                    } else if (dbExists === 'mysql_disabled') {
+                      value = '⚙️ MySQL Disabled';
+                    } else if (dbExists === 'mysql_error') {
+                      value = '⚠️ MySQL Error';
+                    } else if (dbExists === 'batch_timeout') {
+                      value = '⏰ Batch Timeout';
+                    } else if (dbExists === null) {
+                      value = '⚠️ Error';
+                    } else {
+                      value = '—';
+                    }
+                  } else {
+                    value = getValue(item, key);
+                  }
                   
                   const isMissing = value === '—';
                   
