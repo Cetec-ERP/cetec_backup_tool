@@ -38,7 +38,13 @@ app.get("/api/cetec/customer", async (req, res) => {
     if (columns) queryParams.append('columns', columns);
     queryParams.append('preshared_token', preshared_token);
 
-    const apiUrl = process.env.API_URL || 'https://4-19-fifo.cetecerpdevel.com';
+    let apiUrl = process.env.API_URL || 'https://4-19-fifo.cetecerpdevel.com';
+    
+    // Ensure the URL has a protocol
+    if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+      apiUrl = `https://${apiUrl}`;
+    }
+    
     const cetecUrl = `${apiUrl}/api/customer?${queryParams.toString()}`;
     console.log('Proxying request to:', cetecUrl);
     

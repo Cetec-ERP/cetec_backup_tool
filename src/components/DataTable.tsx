@@ -3,12 +3,10 @@ import React from 'react';
 interface DataTableProps {
   data: any[];
   title?: string;
-  showRawData: boolean;
-  onToggleView: () => void;
   columns?: string[]; // Optional array of column keys to display
 }
 
-const DataTable: React.FC<DataTableProps> = ({ data, title = "Data", showRawData, onToggleView, columns }) => {
+const DataTable: React.FC<DataTableProps> = ({ data, title = "Data", columns }) => {
   // Function to safely get values from objects, handling missing properties and null values
   const getValue = (item: any, key: string): string => {
     if (!item || typeof item !== 'object') return '—';
@@ -112,25 +110,13 @@ const DataTable: React.FC<DataTableProps> = ({ data, title = "Data", showRawData
     );
   };
 
-  return (
+    return (
     <div className="data-container">
       <div className="data-header-container">
         <h2 className="data-header">{title}</h2>
-        <button 
-          className="toggle-button"
-          onClick={onToggleView}
-        >
-          {showRawData ? 'Show Table' : 'Show Raw JSON'}
-        </button>
       </div>
-      
-      {showRawData ? (
-        <pre className="json-display">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      ) : (
-        renderDataTable(data)
-      )}
+
+      {renderDataTable(data)}
     </div>
   );
 };

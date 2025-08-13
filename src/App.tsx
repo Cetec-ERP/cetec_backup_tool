@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { config } from './config';
 import { DataTable } from './components';
@@ -8,7 +8,7 @@ function App() {
   const [data, setData] = useState<any>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showRawData, setShowRawData] = useState(false);
+
   const startBackupProcess = async () => {
     setLoading(true);
     setError(null);
@@ -69,8 +69,6 @@ function App() {
         <DataTable 
           data={data}
           title="Customers"
-          showRawData={showRawData}
-          onToggleView={() => setShowRawData(!showRawData)}
           columns={[
             'id',
             'name',
