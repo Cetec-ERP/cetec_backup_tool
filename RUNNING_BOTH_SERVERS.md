@@ -38,7 +38,7 @@ npm run dev
 
 - **Backend**: http://localhost:3001
 - **Frontend**: http://localhost:5173
-- **Backend API Endpoint**: http://localhost:3001/api/data
+- **Backend API Endpoint**: http://localhost:3001/api/cetec/customer
 
 ## Environment Configuration
 
@@ -51,8 +51,7 @@ Create one `.env` file in your project root:
 ```bash
 # Backend Configuration
 PORT=3001
-API_URL=https://yourdomain.cetecerp.com/api/customer/1
-API_TOKEN=your_token_here
+API_URL=https://yourdomain.cetecerp.com
 
 # Frontend Configuration (Vite requires VITE_ prefix)
 VITE_CETEC_DOMAIN=yourdomain.cetecerp.com
@@ -61,7 +60,7 @@ VITE_API_PROTOCOL=http
 ```
 
 **How it works:**
-- **Backend** (`server.js`): Reads `PORT`, `API_URL`, `API_TOKEN`
+- **Backend** (`server.js`): Reads `PORT`, `API_URL`
 - **Frontend** (`src/config.ts`): Reads `VITE_CETEC_DOMAIN`, `VITE_PRESHARED_TOKEN`, `VITE_API_PROTOCOL`
 
 ### Option 2: Separate Files
@@ -69,8 +68,7 @@ VITE_API_PROTOCOL=http
 **Backend** (`.env`):
 ```bash
 PORT=3001
-API_URL=https://yourdomain.cetecerp.com/api/customer/1
-API_TOKEN=your_token_here
+API_URL=https://yourdomain.cetecerp.com
 ```
 
 **Frontend** (`.env.local`):

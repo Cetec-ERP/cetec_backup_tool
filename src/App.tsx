@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { config } from './config';
+import { DataTable } from './components';
 import './App.css';
 
 function App() {
   const [data, setData] = useState<any>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showRawData, setShowRawData] = useState(false);
   const startBackupProcess = async () => {
     setLoading(true);
     setError(null);
@@ -64,12 +66,25 @@ function App() {
       )}
 
       {!loading && !error && data && (
-        <div className="data-container">
-          <h2 className="data-header">Customers</h2>
-          <pre className="json-display">
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </div>
+        <DataTable 
+          data={data}
+          title="Customers"
+          showRawData={showRawData}
+          onToggleView={() => setShowRawData(!showRawData)}
+          columns={[
+            'id',
+            'name',
+            'num_prod_users',
+            'num_full_users',
+            'domain',
+            'ok_to_bill',
+            'priority_support',
+            'resident_hosting',
+            'test_environment',
+            'test_domain',
+            'itar_hosting_bc'
+          ]}
+        />
       )}
     </div>
   );

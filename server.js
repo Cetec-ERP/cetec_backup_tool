@@ -38,8 +38,8 @@ app.get("/api/cetec/customer", async (req, res) => {
     if (columns) queryParams.append('columns', columns);
     queryParams.append('preshared_token', preshared_token);
 
-    const cetecDomain = process.env.CETEC_DOMAIN || '4-19-fifo.cetecerpdevel.com';
-    const cetecUrl = `https://${cetecDomain}/api/customer?${queryParams.toString()}`;
+    const apiUrl = process.env.API_URL || 'https://4-19-fifo.cetecerpdevel.com';
+    const cetecUrl = `${apiUrl}/api/customer?${queryParams.toString()}`;
     console.log('Proxying request to:', cetecUrl);
     
     const response = await axios.get(cetecUrl, {
@@ -62,21 +62,7 @@ app.get("/api/cetec/customer", async (req, res) => {
   }
 });
 
-app.get("/api/data", async (req, res) => {
-  try {
-    const response = await axios.get(process.env.API_URL, {
-      headers: {
-        Authorization: `Bearer ${process.env.API_TOKEN}`,
-        "Access-Control-Allow-Origin": "http://localhost:5173",
-      },
-    });
 
-    res.json(response.data);
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    res.status(500).send("Error fetching data");
-  }
-});
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
