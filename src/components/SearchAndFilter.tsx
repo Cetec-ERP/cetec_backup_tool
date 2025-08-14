@@ -127,7 +127,8 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
                      stringValue === 'mysql_disabled' ? 'MySQL Disabled' :
                      stringValue === 'mysql_error' ? 'MySQL Error' :
                      stringValue === 'batch_timeout' ? 'Batch Timeout' :
-                     stringValue === 'invalid_domain' ? 'Invalid Domain' : stringValue}
+                     stringValue === 'invalid_domain' ? 'Invalid Domain' :
+                     stringValue === 'unavailable' ? 'Unavailable' : stringValue}
                   </option>
                 );
               })}

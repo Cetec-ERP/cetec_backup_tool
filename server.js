@@ -469,10 +469,15 @@ app.get("/api/cetec/customer", async (req, res) => {
               let dbExistsValue;
               if (!hasValidDomain) {
                 dbExistsValue = 'invalid_domain';
-              } else if (isResidentHosting) {
-                dbExistsValue = 'resident_hosting';
               } else if (isItarHosting) {
                 dbExistsValue = 'itar_hosting';
+              } else if (isResidentHosting) {
+                // For resident hosting, check if they have a database mapping
+                if (hasResidentDatabase(customer.domain)) {
+                  dbExistsValue = 'resident_hosting'; // This shouldn't happen here, but safety net
+                } else {
+                  dbExistsValue = 'unavailable'; // Resident hosting without database mapping
+                }
               } else {
                 dbExistsValue = 'mysql_disabled'; // This shouldn't happen, but safety net
               }
