@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { config } from './config';
-import { DataTable } from './components';
+import DataTable from './components/DataTable';
+import SearchAndFilter from './components/SearchAndFilter';
 import './App.css';
 
 function App() {
-  const [data, setData] = useState<any>([]);
+  const [data, setData] = useState<any[]>([]);
+  const [filteredData, setFilteredData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useMySQL, setUseMySQL] = useState(false);
 
   const startBackupProcess = async () => {
     setLoading(true);
@@ -16,22 +17,24 @@ function App() {
     
     try {
       // Choose endpoint based on MySQL preference
-      const endpoint = useMySQL ? 'api/cetec/customer' : 'api/cetec/customer/fast';
+      const endpoint = 'api/cetec/customer'; // Always use the full endpoint for MySQL checking
       const url = `http://localhost:3001/${endpoint}?preshared_token=${config.presharedToken}`;
       
-      console.log(`Starting backup process: ${url} (MySQL: ${useMySQL ? 'enabled' : 'disabled'})`);
+      console.log(`Starting backup process: ${url} (MySQL: enabled)`);
       
       const response = await axios.get(url, { timeout: 60000 }); // Increased timeout for MySQL operations
       
       // Handle the new enriched data structure
       if (response.data && response.data.customers) {
         setData(response.data.customers);
-        console.log(`Received ${response.data.customers.length} customers with ${useMySQL ? 'MySQL enrichment' : 'API data only'}`);
+        setFilteredData(response.data.customers); // Initialize filtered data
+        console.log(`Received ${response.data.customers.length} customers with MySQL enrichment`);
         if (response.data.metadata) {
           console.log('Processing metadata:', response.data.metadata);
         }
       } else {
         setData(response.data); // Fallback for old data structure
+        setFilteredData(response.data); // Initialize filtered data
         console.log('Received data in legacy format');
       }
       
@@ -66,17 +69,6 @@ function App() {
       </h1>
       
       <div className="button-container">
-        <div className="controls-row">
-          <label className="mysql-toggle">
-            <input
-              type="checkbox"
-              checked={useMySQL}
-              onChange={(e) => setUseMySQL(e.target.checked)}
-            />
-            <span>Enable MySQL Database Checking</span>
-          </label>
-        </div>
-        
         <button 
           className="backup-button"
           onClick={handleSubmit}
@@ -85,26 +77,18 @@ function App() {
         </button>
         
         <p className="button-description">
-          {useMySQL 
-            ? 'Click to fetch customers with database verification (slower but more complete)'
-            : 'Click to fetch customers quickly (API data only)'
-          }
+          Click to fetch customers with database verification (slower but more complete)
         </p>
       </div>
 
       {loading && (
         <div className="loading-container">
           <p>
-            {useMySQL 
-              ? 'Processing request and checking databases... (this may take a minute for large datasets)'
-              : 'Processing request...'
-            }
+            Processing request and checking databases... (this may take a minute for large datasets)
           </p>
-          {useMySQL && (
-            <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
-              ⏱️ MySQL operations can take time when processing many customers
-            </p>
-          )}
+          <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
+            ⏱️ MySQL operations can take time when processing many customers
+          </p>
         </div>
       )}
       
@@ -116,87 +100,59 @@ function App() {
 
       {!loading && !error && data && (
         <>
+          {/* Search and Filter */}
+          <SearchAndFilter 
+            data={data} 
+            onFilterChange={setFilteredData}
+          />
+          
           {/* Summary Statistics */}
           <div className="summary-container">
             <div className="summary-stats">
               <div className="summary-item">
                 <span className="summary-label">Total Customers:</span>
-                <span className="summary-value">{data.length}</span>
+                <span className="summary-value">{filteredData.length}</span>
               </div>
-              {useMySQL && (
-                <>
-                  <div className="summary-item">
-                    <span className="summary-label">Existing Databases:</span>
-                    <span className="summary-value success">
-                      {data.filter((customer: any) => customer.database_exists === true).length}
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="summary-label">No Database:</span>
-                    <span className="summary-value warning">
-                      {data.filter((customer: any) => customer.database_exists === false).length}
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="summary-label">Resident Hosting:</span>
-                    <span className="summary-value info">
-                      {data.filter((customer: any) => customer.database_exists === 'resident_hosting').length}
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="summary-label">ITAR Hosting:</span>
-                    <span className="summary-value info">
-                      {data.filter((customer: any) => customer.database_exists === 'itar_hosting').length}
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="summary-label">Invalid Domains:</span>
-                    <span className="summary-value error">
-                      {data.filter((customer: any) => customer.database_exists === 'invalid_domain').length}
-                    </span>
-                  </div>
-                </>
-              )}
-              {!useMySQL && (
-                <>
-                  <div className="summary-item">
-                    <span className="summary-label">Resident Hosting:</span>
-                    <span className="summary-value info">
-                      {data.filter((customer: any) => customer.database_exists === 'resident_hosting').length}
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="summary-label">ITAR Hosting:</span>
-                    <span className="summary-value info">
-                      {data.filter((customer: any) => customer.database_exists === 'itar_hosting').length}
-                    </span>
-                  </div>
-                  <div className="summary-item">
-                    <span className="summary-label">Invalid Domains:</span>
-                    <span className="summary-value error">
-                      {data.filter((customer: any) => customer.database_exists === 'invalid_domain').length}
-                    </span>
-                  </div>
-                </>
-              )}
+              {/* MySQL specific summary items */}
+              <div className="summary-item">
+                <span className="summary-label">Existing Databases:</span>
+                <span className="summary-value success">
+                  {filteredData.filter((customer: any) => customer.database_exists === true).length}
+                </span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">No Database:</span>
+                <span className="summary-value warning">
+                  {filteredData.filter((customer: any) => customer.database_exists === false).length}
+                </span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">Resident Hosting:</span>
+                <span className="summary-value info">
+                  {filteredData.filter((customer: any) => customer.database_exists === 'resident_hosting').length}
+                </span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">ITAR Hosting:</span>
+                <span className="summary-value info">
+                  {filteredData.filter((customer: any) => customer.database_exists === 'itar_hosting').length}
+                </span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">Invalid Domains:</span>
+                <span className="summary-value error">
+                  {filteredData.filter((customer: any) => customer.database_exists === 'invalid_domain').length}
+                </span>
+              </div>
             </div>
           </div>
 
           <DataTable 
-            data={data}
-            title={`Customers${useMySQL ? ' (with Database Verification)' : ' (with Hosting Status)'}`}
+            data={filteredData}
+            title={`Customers (with Database Verification)`}
             columns={[
-              'id',
-              'name',
-              'total_users',
-              'domain',
-              'database_exists',
-              'ok_to_bill',
-              'priority_support',
-              'resident_hosting',
-              'test_environment',
-              'test_domain',
-              'itar_hosting_bc'
+              'id', 'name', 'total_users', 'domain', 'database_exists',
+              'ok_to_bill', 'priority_support', 'resident_hosting', 'test_environment', 'test_domain', 'itar_hosting_bc'
             ]}
           />
         </>

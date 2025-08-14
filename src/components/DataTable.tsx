@@ -92,23 +92,23 @@ const DataTable: React.FC<DataTableProps> = ({ data, title = "Data", columns }) 
                   } else if (key === 'database_exists') {
                     const dbExists = item[key];
                     if (dbExists === true) {
-                      value = '✅ Yes';
+                      value = 'Yes';
                     } else if (dbExists === false) {
-                      value = '❌ No';
+                      value = 'No';
                     } else if (dbExists === 'resident_hosting') {
-                      value = '🏠 Resident Hosting';
+                      value = 'Resident Hosting';
                     } else if (dbExists === 'itar_hosting') {
-                      value = '🔒 ITAR Hosting';
+                      value = 'ITAR Hosting';
                     } else if (dbExists === 'mysql_disabled') {
-                      value = '⚙️ MySQL Disabled';
+                      value = 'MySQL Disabled';
                     } else if (dbExists === 'mysql_error') {
-                      value = '⚠️ MySQL Error';
+                      value = 'MySQL Error';
                     } else if (dbExists === 'batch_timeout') {
-                      value = '⏰ Batch Timeout';
+                      value = 'Batch Timeout';
                     } else if (dbExists === 'invalid_domain') {
-                      value = '❓ Invalid Domain';
+                      value = 'Invalid Domain';
                     } else if (dbExists === null) {
-                      value = '⚠️ Error';
+                      value = 'Error';
                     } else {
                       value = '—';
                     }
