@@ -321,7 +321,7 @@ app.get("/api/cetec/customer", async (req, res) => {
   let cetecUrl = ''; // Declare outside try block for error handling
   
   try {
-    const { id, name, external_key, columns, preshared_token, filter_billing } = req.query;
+    const { id, name, external_key, columns, preshared_token } = req.query;
     
     console.log('Received request with query params:', req.query);
     
@@ -338,6 +338,15 @@ app.get("/api/cetec/customer", async (req, res) => {
     if (name) queryParams.append('name', name);
     if (external_key) queryParams.append('external_key', external_key);
     if (columns) queryParams.append('columns', columns);
+    
+    // Always request only billing-enabled customers to reduce data transfer and processing
+    queryParams.append('ok_to_bill', '1');
+    
+    // Limit columns to only what we need for better performance
+    if (!columns) {
+      queryParams.append('columns', 'id,name,domain,ok_to_bill,priority_support,resident_hosting,test_environment,test_domain,itar_hosting_bc,num_prod_users,num_full_users');
+    }
+    
     queryParams.append('preshared_token', preshared_token);
 
     let apiUrl = process.env.API_URL || 'https://4-19-fifo.cetecerpdevel.com';
@@ -349,6 +358,7 @@ app.get("/api/cetec/customer", async (req, res) => {
     
     cetecUrl = `${apiUrl}/api/customer?${queryParams.toString()}`;
     console.log('Proxying request to:', cetecUrl);
+    console.log('Requested columns:', queryParams.get('columns') || 'all');
     
     const response = await axios.get(cetecUrl, {
       timeout: 10000,
@@ -356,28 +366,36 @@ app.get("/api/cetec/customer", async (req, res) => {
 
     let responseData = response.data;
     console.log(`Step 1 complete: Received ${responseData.length || 0} customers from API`);
+    
+    // Log data size optimization
+    if (responseData.length > 0 && responseData[0]) {
+      const requestedColumns = queryParams.get('columns');
+      const actualColumns = Object.keys(responseData[0]);
+      console.log(`Data optimization: Requested ${requestedColumns ? requestedColumns.split(',').length : 'all'} columns, received ${actualColumns.length} columns`);
+    }
 
-    // Step 2: Filter customers by ok_to_bill if requested OR if MySQL is enabled
-    // Always filter when MySQL is enabled to avoid unnecessary database checks
-    if ((filter_billing === 'true' || isMySQLConfigured) && Array.isArray(responseData)) {
+    // Step 2: Filter customers by ok_to_bill since the API parameter may not be working as expected
+    // This ensures we only process billing-enabled customers
+    if (Array.isArray(responseData)) {
       console.log('Step 2: Filtering customers by billing status...');
       
       const beforeCount = responseData.length;
       responseData = responseData.filter(customer => {
         const okToBill = customer.ok_to_bill;
-        return okToBill !== 0 && okToBill !== '';
+        // Filter for truthy values (1, true, "1", etc.) and exclude falsy values (0, false, "", null, undefined)
+        return okToBill && okToBill !== 0 && okToBill !== '' && okToBill !== '0' && okToBill !== 'false';
       });
       const afterCount = responseData.length;
       console.log(`Step 2 complete: Filtered ${beforeCount} customers down to ${afterCount} billing-enabled customers`);
     } else {
-      console.log('Step 2: Skipping billing filter (not requested and MySQL not enabled)');
+      console.log('Step 2: Skipping billing filter - response data is not an array');
     }
-
+    
     // Step 3: Enrich filtered data with MySQL database existence checks
     let enrichedData = responseData;
     let mysqlStatus = 'disabled';
     
-    console.log(`Step 3: Starting MySQL enrichment process on ${responseData.length} customers (already filtered by ok_to_bill)`);
+    console.log(`Step 3: Starting MySQL enrichment process on ${responseData.length} filtered customers`);
     
     if (isMySQLConfigured && Array.isArray(responseData) && responseData.length > 0) {
       console.log(`Step 3: Enriching ${responseData.length} customers with MySQL database checks...`);
@@ -558,7 +576,7 @@ app.get("/api/cetec/customer", async (req, res) => {
         },
         processing_steps: {
           api_fetch: 'completed',
-          billing_filter: filter_billing === 'true' ? 'completed' : 'skipped',
+          billing_filter: 'completed', // Backend filtering applied
           mysql_enrichment: mysqlStatus
         }
       }
@@ -588,7 +606,7 @@ app.get("/api/cetec/customer/fast", async (req, res) => {
   let cetecUrl = '';
   
   try {
-    const { id, name, external_key, columns, preshared_token, filter_billing } = req.query;
+    const { id, name, external_key, columns, preshared_token } = req.query;
     
     console.log('Fast endpoint: Fetching API data only...');
     
@@ -602,6 +620,15 @@ app.get("/api/cetec/customer/fast", async (req, res) => {
     if (name) queryParams.append('name', name);
     if (external_key) queryParams.append('external_key', external_key);
     if (columns) queryParams.append('columns', columns);
+    
+    // Always request only billing-enabled customers to reduce data transfer and processing
+    queryParams.append('ok_to_bill', '1');
+    
+    // Limit columns to only what we need for better performance
+    if (!columns) {
+      queryParams.append('columns', 'id,name,domain,ok_to_bill,priority_support,resident_hosting,test_environment,test_domain,itar_hosting_bc,num_prod_users,num_full_users');
+    }
+    
     queryParams.append('preshared_token', preshared_token);
 
     let apiUrl = process.env.API_URL || 'https://4-19-fifo.cetecerpdevel.com';
@@ -613,6 +640,7 @@ app.get("/api/cetec/customer/fast", async (req, res) => {
     
     cetecUrl = `${apiUrl}/api/customer?${queryParams.toString()}`;
     console.log('Fast endpoint: Proxying request to:', cetecUrl);
+    console.log('Fast endpoint: Requested columns:', queryParams.get('columns') || 'all');
     
     const response = await axios.get(cetecUrl, {
       timeout: 10000,
@@ -620,20 +648,28 @@ app.get("/api/cetec/customer/fast", async (req, res) => {
 
     let responseData = response.data;
     console.log(`Fast endpoint: Received ${responseData.length || 0} customers from API`);
+    
+    // Log data size optimization
+    if (responseData.length > 0 && responseData[0]) {
+      const requestedColumns = queryParams.get('columns');
+      const actualColumns = Object.keys(responseData[0]);
+      console.log(`Fast endpoint: Data optimization - Requested ${requestedColumns ? requestedColumns.split(',').length : 'all'} columns, received ${actualColumns.length} columns`);
+    }
 
-    // Filter customers by ok_to_bill if requested OR if MySQL is enabled
-    // Always filter when MySQL is enabled to avoid unnecessary database checks
-    if ((filter_billing === 'true' || isMySQLConfigured) && Array.isArray(responseData)) {
+    // Filter customers by ok_to_bill since the API parameter may not be working as expected
+    if (Array.isArray(responseData)) {
       console.log('Fast endpoint: Filtering customers by billing status...');
+      
       const beforeCount = responseData.length;
       responseData = responseData.filter(customer => {
         const okToBill = customer.ok_to_bill;
-        return okToBill !== 0 && okToBill !== '';
+        // Filter for truthy values (1, true, "1", etc.) and exclude falsy values (0, false, "", null, undefined)
+        return okToBill && okToBill !== 0 && okToBill !== '' && okToBill !== '0' && okToBill !== 'false';
       });
       const afterCount = responseData.length;
       console.log(`Fast endpoint: Filtered ${beforeCount} customers down to ${afterCount} billing-enabled customers`);
     } else {
-      console.log('Fast endpoint: Skipping billing filter (not requested and MySQL not enabled)');
+      console.log('Fast endpoint: Skipping billing filter - response data is not an array');
     }
 
     // Add database_exists field based on hosting status (no MySQL checking)
@@ -682,7 +718,7 @@ app.get("/api/cetec/customer/fast", async (req, res) => {
         },
         processing_steps: {
           api_fetch: 'completed',
-          billing_filter: filter_billing === 'true' ? 'completed' : 'skipped',
+          billing_filter: 'completed', // Backend filtering applied
           mysql_enrichment: 'skipped'
         }
       }
