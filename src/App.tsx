@@ -129,7 +129,7 @@ function App() {
               <div className="summary-item">
                 <span className="summary-label">Resident Hosting:</span>
                 <span className="summary-value info">
-                  {filteredData.filter((customer: any) => customer.database_exists === 'resident_hosting').length}
+                  {filteredData.filter((customer: any) => customer.resident_hosting === true || customer.resident_hosting === 1).length}
                 </span>
               </div>
               <div className="summary-item">
@@ -141,13 +141,7 @@ function App() {
               <div className="summary-item">
                 <span className="summary-label">ITAR Hosting:</span>
                 <span className="summary-value info">
-                  {filteredData.filter((customer: any) => customer.database_exists === 'itar_hosting').length}
-                </span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Invalid Domains:</span>
-                <span className="summary-value error">
-                  {filteredData.filter((customer: any) => customer.database_exists === 'invalid_domain').length}
+                  {filteredData.filter((customer: any) => customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1).length}
                 </span>
               </div>
             </div>
