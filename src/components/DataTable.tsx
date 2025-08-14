@@ -105,6 +105,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, title = "Data", columns }) 
                       value = '⚠️ MySQL Error';
                     } else if (dbExists === 'batch_timeout') {
                       value = '⏰ Batch Timeout';
+                    } else if (dbExists === 'invalid_domain') {
+                      value = '❓ Invalid Domain';
                     } else if (dbExists === null) {
                       value = '⚠️ Error';
                     } else {
