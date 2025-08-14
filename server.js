@@ -2,8 +2,15 @@ import express from "express";
 import axios from "axios";
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+// ES modules equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -82,23 +89,62 @@ const mysqlConfig = {
 
 // Create a connection pool instead of individual connections
 let mysqlPool = null;
+let residentDBsConfig = null;
+
+// Load resident databases configuration
+async function loadResidentDBsConfig() {
+  try {
+    const configPath = path.join(__dirname, 'src', 'config', 'resident-dbs.json');
+    const configData = await fs.readFile(configPath, 'utf8');
+    residentDBsConfig = JSON.parse(configData);
+    console.log(`Resident DBs configuration loaded: ${Object.keys(residentDBsConfig).length} mappings`);
+  } catch (error) {
+    console.warn('Failed to load resident DBs configuration, using defaults:', error.message);
+    residentDBsConfig = {};
+  }
+}
+
+// Check if a domain has a resident database mapping
+function hasResidentDatabase(domain) {
+  if (!residentDBsConfig || !domain) {
+    return false;
+  }
+  
+  const hasDB = domain.toLowerCase() in residentDBsConfig || 
+         Object.keys(residentDBsConfig).some(key => key.toLowerCase() === domain.toLowerCase());
+  
+  return hasDB;
+}
+
+// Get database name for a resident hosting domain
+function getResidentDatabaseName(domain) {
+  if (!residentDBsConfig || !domain) return null;
+  
+  // Try exact match first
+  if (domain in residentDBsConfig) {
+    return residentDBsConfig[domain];
+  }
+  
+  // Try case-insensitive match
+  const matchingKey = Object.keys(residentDBsConfig).find(key => 
+    key.toLowerCase() === domain.toLowerCase()
+  );
+  
+  return matchingKey ? residentDBsConfig[matchingKey] : null;
+}
 
 // Initialize MySQL pool
 async function initializeMySQLPool() {
   if (!isMySQLConfigured) {
-    console.log('MySQL not configured, skipping pool initialization');
     return;
   }
   
   try {
-    console.log('Initializing MySQL connection pool...');
     mysqlPool = mysql.createPool(mysqlConfig);
     
     // Test the pool with a simple connection
     const testConnection = await mysqlPool.getConnection();
-    console.log('MySQL pool test connection successful');
     testConnection.release();
-    console.log('MySQL connection pool initialized successfully');
   } catch (error) {
     console.error('Failed to initialize MySQL pool:', error.message);
     mysqlPool = null;
@@ -109,26 +155,30 @@ async function initializeMySQLPool() {
 const isMySQLConfigured = mysqlConfig.host && mysqlConfig.user && mysqlConfig.password;
 
 // Function to check if a database exists for a given domain
-async function checkDatabaseExists(domain) {
-  if (!isMySQLConfigured || !mysqlPool) {
-    console.warn('MySQL not configured or pool not initialized, skipping database existence check');
-    return null;
+async function checkDatabaseExists(domain, isResidentHosting = false) {
+  if (!mysqlPool) {
+    throw new Error('MySQL pool not initialized');
   }
 
-  let connection = null;
+  let connection;
   try {
-    // Get connection from pool with timeout
-    connection = await Promise.race([
-      mysqlPool.getConnection(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timeout')), 30000)
-      )
-    ]);
+    connection = await mysqlPool.getConnection();
+    
+    // For resident hosting customers, use the database name from the mapping
+    let databaseName = domain;
+    if (isResidentHosting) {
+      const residentDBName = getResidentDatabaseName(domain);
+      if (residentDBName) {
+        databaseName = residentDBName;
+      } else {
+        throw new Error(`No database mapping found for resident hosting domain: ${domain}`);
+      }
+    }
     
     // Use SELECT FROM information_schema to check if database exists
     // This is more compatible with parameter binding than SHOW DATABASES
     const query = 'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?';
-    const params = [domain];
+    const params = [databaseName];
     
     const [rows] = await Promise.race([
       connection.execute(query, params),
@@ -137,22 +187,13 @@ async function checkDatabaseExists(domain) {
       )
     ]);
     
-    // If rows.length > 0, database exists
-    const exists = rows.length > 0;
-    return exists;
+    return rows.length > 0;
   } catch (error) {
     console.error(`Error checking database for domain ${domain}:`, error.message);
-    if (error.code === 'ETIMEDOUT') {
-      console.error(`Timeout error for ${domain} - this may indicate network latency or server overload`);
-    }
-    return null; // Return null to indicate error
+    throw error;
   } finally {
     if (connection) {
-      try {
-        connection.release();
-      } catch (releaseError) {
-        console.error(`Error releasing connection for ${domain}:`, releaseError.message);
-      }
+      connection.release();
     }
   }
 }
@@ -179,20 +220,21 @@ async function enrichCustomerData(customers) {
     
     // Process batch in parallel with individual timeouts
     const batchPromises = batch.map(async (customer) => {
-      const enrichedCustomer = { ...customer };
-      
-      if (customer.domain) {
-        const dbExists = await checkDatabaseExists(customer.domain);
-        enrichedCustomer.database_exists = dbExists;
+      try {
+        const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
+        const databaseExists = await checkDatabaseExists(customer.domain, isResidentHosting);
         
-        if (dbExists === null) {
-          mysqlErrors++;
-        }
-      } else {
-        enrichedCustomer.database_exists = null;
+        return {
+          ...customer,
+          database_exists: databaseExists
+        };
+      } catch (error) {
+        console.error(`Error enriching customer ${customer.id} (${customer.domain}):`, error.message);
+        return {
+          ...customer,
+          database_exists: 'mysql_error'
+        };
       }
-      
-      return enrichedCustomer;
     });
     
     // Wait for batch to complete with overall timeout
@@ -247,7 +289,6 @@ app.get("/api/test-mysql", async (req, res) => {
   }
   
   try {
-    console.log('Testing MySQL connection...');
     
     // Determine connection method
     const isDevelopment = process.env.NODE_ENV === 'development';
@@ -255,11 +296,7 @@ app.get("/api/test-mysql", async (req, res) => {
     const connectionMethod = useSocket ? 'cloud_sql_proxy' : 'direct_host';
     
     if (useSocket) {
-      console.log(`Using Cloud SQL Proxy socket (development): ${process.env.MYSQL_SOCKET}`);
-      console.log(`User: ${mysqlConfig.user}`);
     } else {
-      console.log(`Using direct host connection (${isDevelopment ? 'development' : 'production'}): ${mysqlConfig.host}:${mysqlConfig.port}`);
-      console.log(`User: ${mysqlConfig.user}`);
     }
     
     const connection = await mysql.createConnection({
@@ -271,11 +308,9 @@ app.get("/api/test-mysql", async (req, res) => {
       connectTimeout: useSocket ? 10000 : 30000
     });
     
-    console.log('MySQL connection test successful');
     
     // Test a simple query
     const [rows] = await connection.execute('SELECT 1 as test');
-    console.log('MySQL query test successful:', rows);
     
     await connection.end();
     
@@ -323,14 +358,11 @@ app.get("/api/cetec/customer", async (req, res) => {
   try {
     const { id, name, external_key, columns, preshared_token } = req.query;
     
-    console.log('Received request with query params:', req.query);
-    
     if (!preshared_token) {
       return res.status(400).json({ error: "preshared_token is required" });
     }
 
     // Step 1: Fetch data from CETEC API
-    console.log('Step 1: Fetching data from CETEC API...');
     
     // Build query string with all parameters
     const queryParams = new URLSearchParams();
@@ -357,84 +389,65 @@ app.get("/api/cetec/customer", async (req, res) => {
     }
     
     cetecUrl = `${apiUrl}/api/customer?${queryParams.toString()}`;
-    console.log('Proxying request to:', cetecUrl);
-    console.log('Requested columns:', queryParams.get('columns') || 'all');
     
     const response = await axios.get(cetecUrl, {
       timeout: 10000,
     });
 
     let responseData = response.data;
-    console.log(`Step 1 complete: Received ${responseData.length || 0} customers from API`);
     
-    // Log data size optimization
-    if (responseData.length > 0 && responseData[0]) {
-      const requestedColumns = queryParams.get('columns');
-      const actualColumns = Object.keys(responseData[0]);
-      console.log(`Data optimization: Requested ${requestedColumns ? requestedColumns.split(',').length : 'all'} columns, received ${actualColumns.length} columns`);
-    }
-
     // Step 2: Filter customers by ok_to_bill since the API parameter may not be working as expected
     // This ensures we only process billing-enabled customers
     if (Array.isArray(responseData)) {
-      console.log('Step 2: Filtering customers by billing status...');
       
-      const beforeCount = responseData.length;
       responseData = responseData.filter(customer => {
         const okToBill = customer.ok_to_bill;
         // Filter for truthy values (1, true, "1", etc.) and exclude falsy values (0, false, "", null, undefined)
         return okToBill && okToBill !== 0 && okToBill !== '' && okToBill !== '0' && okToBill !== 'false';
       });
-      const afterCount = responseData.length;
-      console.log(`Step 2 complete: Filtered ${beforeCount} customers down to ${afterCount} billing-enabled customers`);
     } else {
-      console.log('Step 2: Skipping billing filter - response data is not an array');
     }
     
     // Step 3: Enrich filtered data with MySQL database existence checks
     let enrichedData = responseData;
     let mysqlStatus = 'disabled';
     
-    console.log(`Step 3: Starting MySQL enrichment process on ${responseData.length} filtered customers`);
     
     if (isMySQLConfigured && Array.isArray(responseData) && responseData.length > 0) {
-      console.log(`Step 3: Enriching ${responseData.length} customers with MySQL database checks...`);
-      console.log(`MySQL config: host=${mysqlConfig.host}, user=${mysqlConfig.user}, port=${mysqlConfig.port}`);
       
       try {
         // Only check MySQL for customers who are hosted on our infrastructure
         // (not resident hosting and not ITAR hosting)
+        // EXCEPT for resident hosting customers who have databases listed in resident-dbs.json
         const customersToCheck = responseData.filter(customer => {
           const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
           const isItarHosting = customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1;
           const hasValidDomain = customer.domain && customer.domain.trim() !== '' && customer.domain !== 'undefined';
-          return !isResidentHosting && !isItarHosting && hasValidDomain;
+          
+          // Skip if no valid domain
+          if (!hasValidDomain) return false;
+          
+          // Skip ITAR hosting customers
+          if (isItarHosting) return false;
+          
+          // For resident hosting customers, only check if they have a database mapping
+          if (isResidentHosting) {
+            const hasDB = hasResidentDatabase(customer.domain);
+            if (hasDB) {
+              const dbName = getResidentDatabaseName(customer.domain);
+            } else {
+            }
+            return hasDB;
+          }
+          
+          // Check all other customers (infrastructure hosting)
+          return true;
         });
         
-        console.log(`Step 3a: Filtering customers for MySQL check - ${customersToCheck.length} out of ${responseData.length} need database verification`);
-        
-        // Log filtering statistics
-        const invalidDomainCount = responseData.filter(customer => {
-          const hasValidDomain = customer.domain && customer.domain.trim() !== '' && customer.domain !== 'undefined';
-          return !hasValidDomain;
-        }).length;
-        
-        const residentHostingCount = responseData.filter(customer => {
-          const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
-          return isResidentHosting;
-        }).length;
-        
-        const itarHostingCount = responseData.filter(customer => {
-          const isItarHosting = customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1;
-          return isItarHosting;
-        }).length;
-        
-        console.log(`Step 3a: Filtering breakdown - Total: ${responseData.length}, Invalid domains: ${invalidDomainCount}, Resident hosting: ${residentHostingCount}, ITAR hosting: ${itarHostingCount}, MySQL checks needed: ${customersToCheck.length}`);
         
         if (customersToCheck.length > 0) {
-          console.log('Step 3b: Starting MySQL database checks...');
+          
           enrichedData = await enrichCustomerData(customersToCheck);
-          console.log('Step 3c: MySQL enrichment completed, merging results...');
           
           // Create a map of enriched customers by ID
           const enrichedMap = new Map();
@@ -468,7 +481,6 @@ app.get("/api/cetec/customer", async (req, res) => {
             }
           });
         } else {
-          console.log('Step 3b: No customers need MySQL checking, setting values by hosting status');
           // No customers need MySQL checking, set appropriate values
           enrichedData = responseData.map(customer => {
             const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
@@ -491,10 +503,8 @@ app.get("/api/cetec/customer", async (req, res) => {
         }
         
         mysqlStatus = 'completed';
-        console.log('Step 3 complete: MySQL enrichment finished successfully');
       } catch (mysqlError) {
         console.error('Step 3 failed: MySQL enrichment error:', mysqlError.message);
-        console.log('Continuing with unfiltered data due to MySQL error');
         
         // Set database_exists values based on hosting status when MySQL fails
         enrichedData = responseData.map(customer => {
@@ -519,11 +529,6 @@ app.get("/api/cetec/customer", async (req, res) => {
         mysqlStatus = 'failed';
       }
     } else {
-      console.log('Step 3: Skipping MySQL enrichment');
-      console.log(`MySQL configured: ${isMySQLConfigured}`);
-      console.log(`Response data is array: ${Array.isArray(responseData)}`);
-      console.log(`Response data length: ${responseData ? responseData.length : 'undefined'}`);
-      
       // Set database_exists values based on hosting status when MySQL is disabled
       enrichedData = responseData.map(customer => {
         const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
@@ -548,7 +553,6 @@ app.get("/api/cetec/customer", async (req, res) => {
     }
 
     // Step 4: Prepare final response
-    console.log('Step 4: Preparing final response...');
     
     // Calculate summary statistics for display
     const totalCustomers = enrichedData.length;
@@ -582,7 +586,6 @@ app.get("/api/cetec/customer", async (req, res) => {
       }
     };
 
-    console.log('Step 4 complete: Sending response to client');
     res.json(result);
     
   } catch (error) {
@@ -607,8 +610,6 @@ app.get("/api/cetec/customer/fast", async (req, res) => {
   
   try {
     const { id, name, external_key, columns, preshared_token } = req.query;
-    
-    console.log('Fast endpoint: Fetching API data only...');
     
     if (!preshared_token) {
       return res.status(400).json({ error: "preshared_token is required" });
@@ -639,37 +640,22 @@ app.get("/api/cetec/customer/fast", async (req, res) => {
     }
     
     cetecUrl = `${apiUrl}/api/customer?${queryParams.toString()}`;
-    console.log('Fast endpoint: Proxying request to:', cetecUrl);
-    console.log('Fast endpoint: Requested columns:', queryParams.get('columns') || 'all');
     
     const response = await axios.get(cetecUrl, {
       timeout: 10000,
     });
 
     let responseData = response.data;
-    console.log(`Fast endpoint: Received ${responseData.length || 0} customers from API`);
     
-    // Log data size optimization
-    if (responseData.length > 0 && responseData[0]) {
-      const requestedColumns = queryParams.get('columns');
-      const actualColumns = Object.keys(responseData[0]);
-      console.log(`Fast endpoint: Data optimization - Requested ${requestedColumns ? requestedColumns.split(',').length : 'all'} columns, received ${actualColumns.length} columns`);
-    }
-
     // Filter customers by ok_to_bill since the API parameter may not be working as expected
     if (Array.isArray(responseData)) {
-      console.log('Fast endpoint: Filtering customers by billing status...');
       
-      const beforeCount = responseData.length;
       responseData = responseData.filter(customer => {
         const okToBill = customer.ok_to_bill;
         // Filter for truthy values (1, true, "1", etc.) and exclude falsy values (0, false, "", null, undefined)
         return okToBill && okToBill !== 0 && okToBill !== '' && okToBill !== '0' && okToBill !== 'false';
       });
-      const afterCount = responseData.length;
-      console.log(`Fast endpoint: Filtered ${beforeCount} customers down to ${afterCount} billing-enabled customers`);
     } else {
-      console.log('Fast endpoint: Skipping billing filter - response data is not an array');
     }
 
     // Add database_exists field based on hosting status (no MySQL checking)
@@ -724,7 +710,6 @@ app.get("/api/cetec/customer/fast", async (req, res) => {
       }
     };
 
-    console.log('Fast endpoint: Sending response to client');
     res.json(result);
     
   } catch (error) {
@@ -749,6 +734,7 @@ app.listen(port, async () => {
     console.log('MySQL integration enabled: Yes');
     console.log(`API URL: ${process.env.API_URL || 'not set'}`);
     await initializeMySQLPool();
+    await loadResidentDBsConfig(); // Load resident DBs config on startup
   } else {
     console.log('MySQL integration enabled: No');
     console.log(`API URL: ${process.env.API_URL || 'not set'}`);
