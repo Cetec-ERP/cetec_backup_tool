@@ -107,6 +107,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, title = "Data", columns }) 
                       value = 'Batch Timeout';
                     } else if (dbExists === 'invalid_domain') {
                       value = 'Invalid Domain';
+                    } else if (dbExists === 'unavailable') {
+                      value = 'Unavailable';
                     } else if (dbExists === null) {
                       value = 'Error';
                     } else {

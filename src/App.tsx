@@ -133,6 +133,12 @@ function App() {
                 </span>
               </div>
               <div className="summary-item">
+                <span className="summary-label">Unavailable:</span>
+                <span className="summary-value info">
+                  {filteredData.filter((customer: any) => customer.database_exists === 'unavailable').length}
+                </span>
+              </div>
+              <div className="summary-item">
                 <span className="summary-label">ITAR Hosting:</span>
                 <span className="summary-value info">
                   {filteredData.filter((customer: any) => customer.database_exists === 'itar_hosting').length}
