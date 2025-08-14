@@ -118,6 +118,27 @@ const DataTable: React.FC<DataTableProps> = ({ data, title = "Data", columns }) 
                   
                   const isMissing = value === '—';
                   
+                  // Special rendering for ID column - make it a clickable link
+                  if (key === 'id' && !isMissing && value !== '—') {
+                    const customerUrl = `https://internal.cetecerpbeta.com/react/customer/${value}/view?newversion=1`;
+                    return (
+                      <td 
+                        key={key} 
+                        className="table-cell"
+                        data-missing={isMissing}
+                      >
+                        <a 
+                          href={customerUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="customer-link"
+                        >
+                          {value}
+                        </a>
+                      </td>
+                    );
+                  }
+                  
                   return (
                     <td 
                       key={key} 
