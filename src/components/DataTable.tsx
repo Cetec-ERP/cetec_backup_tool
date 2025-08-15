@@ -182,13 +182,13 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
                     );
                   }
                   
-                  // Check if we should show the Devel button (same logic as Pull buttons)
+                  // Check if we should show the Devel button
                   const isItarHosting = Boolean(item.itar_hosting_bc);
                   const isResidentHosting = Boolean(item.resident_hosting);
-                  const hasResidentDatabase = isResidentHosting && item.database_exists === 'unavailable';
+                  const databaseExists = item.database_exists === true;
                   
-                  // Don't show button for ITAR hosting or resident hosting without database mapping
-                  if (isItarHosting || hasResidentDatabase) {
+                  // Don't show button for ITAR hosting, resident hosting without database mapping, or when database doesn't exist
+                  if (isItarHosting || (isResidentHosting && !databaseExists) || !databaseExists) {
                     return (
                       <td key={key} className="table-cell">
                         <span className="no-action">—</span>
