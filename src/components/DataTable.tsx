@@ -1,13 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface DataTableProps {
   data: any[];
   title?: string;
   columns?: string[]; // Optional array of column keys to display
   onTimestampUpdate?: (customerId: string, timestamp: string) => void; // Callback to update timestamp in parent
+  onDatabaseStatusUpdate?: (customerId: string, databaseExists: any) => void; // Callback to update database status
 }
 
-const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
+const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDatabaseStatusUpdate }) => {
+  // Track which customers have had their Devel buttons hidden after Pull
+  const [hiddenDevelButtons, setHiddenDevelButtons] = useState<Set<string>>(new Set());
+
   if (!data || data.length === 0) {
     return <div className="no-data">No data available</div>;
   }
@@ -58,48 +62,98 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
         }
       }
       
-      // Get the domain for the backup request
-      const domain = item.domain;
-      if (!domain) {
-        console.error('No domain available for this customer');
-        return;
-      }
+      // Immediately hide the Devel button for this customer
+      setHiddenDevelButtons(prev => new Set(prev).add(String(item.id)));
       
-      // Determine the database name to use for the backup request
-      let dbName = domain;
-      
-      // Check if this is a resident hosting customer with a database mapping
-      if (item.resident_hosting && item.database_exists === 'unavailable') {
-        // This customer has resident hosting but no database mapping, so we can't do a backup
-        return;
-      }
-      
-      // Now attempt the backup request (this can fail without affecting the timestamp)
-      const backupApiUrl = `http://localhost:3001/api/backup/request`;
-      
-      try {
-        const backupResponse = await fetch(backupApiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ dbname: dbName }),
-        });
-        
-        if (!backupResponse.ok) {
-          throw new Error(`Backup request failed: ${backupResponse.status}`);
+      // Schedule the MySQL check immediately - this is the important part!
+      const timeoutId = setTimeout(async () => {
+        try {
+          // Instead of calling the API, make a direct MySQL check for this specific customer
+          const mysqlCheckResponse = await fetch('http://localhost:3001/api/mysql/check', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              customerId: item.id,
+              domain: item.domain,
+              residentHosting: item.resident_hosting,
+              itarHosting: item.itar_hosting_bc
+            }),
+          });
+
+          if (mysqlCheckResponse.ok) {
+            const mysqlResult = await mysqlCheckResponse.json();
+
+            if (mysqlResult.success) {
+              const databaseExists = mysqlResult.databaseExists;
+
+              if (onDatabaseStatusUpdate) {
+                onDatabaseStatusUpdate(item.id, databaseExists);
+              }
+
+              setHiddenDevelButtons(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(String(item.id));
+                return newSet;
+              });
+            }
+          }
+        } catch (error) {
+          console.error('MySQL check failed:', error);
         }
-        
-        const backupResult = await backupResponse.json();
-        
-      } catch (backupError) {
-        console.warn('Backup request failed, but timestamp was recorded:', backupError);
-        // Don't re-throw the error since we want to keep the timestamp update
-      }
+      }, 60000); // 1 minute delay
+      
+      // Now handle the backup request as a completely separate, non-blocking operation
+      const handleBackupRequest = async () => {
+        try {
+          const domain = item.domain;
+          if (!domain) {
+            return;
+          }
+          
+          let dbName = domain;
+          if (item.resident_hosting && item.database_exists === 'unavailable') {
+            return;
+          }
+          
+          const backupApiUrl = `http://localhost:3001/api/backup/request`;
+          
+          // Add a timeout to prevent hanging
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => {
+            controller.abort();
+          }, 10000); // 10 second timeout
+          
+          const backupResponse = await fetch(backupApiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ dbname: dbName }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+
+          if (!backupResponse.ok) {
+            throw new Error(`Backup request failed: ${backupResponse.status}`);
+          }
+
+          const backupResult = await backupResponse.json();
+
+        } catch (backupError: any) {
+          // Backup request failed silently (non-blocking)
+        }
+      };
+      
+      // Start the backup request in a separate thread (non-blocking)
+      handleBackupRequest().catch(error => {
+        console.error('Backup request thread error:', error);
+      });
       
     } catch (error) {
       console.error('Error in backup process:', error);
-      // You can add error handling here (e.g., show error message, retry logic, etc.)
     }
   };
 
@@ -172,7 +226,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
                   const fullUsers = item.num_full_users || 0;
                   value = prodUsers + fullUsers;
                 } else if (key === 'database_exists') {
-                  // For Devel Environment column, show buttons only for eligible customers
                   const domain = item.domain;
                   if (!domain || domain === 'undefined' || domain.trim() === '') {
                     return (
@@ -181,38 +234,26 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
                       </td>
                     );
                   }
-                  
-                  // Check if we should show the Devel button
+
                   const isItarHosting = Boolean(item.itar_hosting_bc);
                   const isResidentHosting = Boolean(item.resident_hosting);
                   const databaseExists = item.database_exists === true;
+                  const isDevelButtonHidden = hiddenDevelButtons.has(String(item.id)); // Check hidden state
                   
-                  // Don't show button for ITAR hosting, resident hosting without database mapping, or when database doesn't exist
-                  if (isItarHosting || (isResidentHosting && !databaseExists) || !databaseExists) {
+                  // Don't show button for ITAR hosting, resident hosting without database mapping, when database doesn't exist, or if temporarily hidden
+                  if (isItarHosting || (isResidentHosting && !databaseExists) || !databaseExists || isDevelButtonHidden) {
                     return (
                       <td key={key} className="table-cell">
                         <span className="no-action">—</span>
                       </td>
                     );
                   }
-                  
-                  // Determine the URL to use
-                  let customerUrl;
-                  
-                  if (isResidentHosting) {
-                    // For resident hosting, check if we have a database mapping
-                    // This would need to be implemented based on your resident database mapping logic
-                    // For now, using the domain as fallback
-                    customerUrl = `http://${domain}.cetecerpdevel.com`;
-                  } else {
-                    // For regular hosting, use the domain
-                    customerUrl = `http://${domain}.cetecerpdevel.com`;
-                  }
-                  
-                  // Create clickable button
+
+                  let customerUrl = `http://${domain}.cetecerpdevel.com`;
+
                   return (
                     <td key={key} className="table-cell">
-                      <button 
+                      <button
                         className="devel-environment-btn"
                         onClick={() => window.open(customerUrl, '_blank', 'noopener,noreferrer')}
                       >
