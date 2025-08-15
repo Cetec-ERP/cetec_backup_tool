@@ -59,11 +59,15 @@ function App() {
     startBackupProcess();
   };
 
-  const handleTimestampUpdate = (customerId: string, timestamp: string) => {
+  const handleTimestampUpdate = (customerId: string, timestamp: string, databaseExists?: any) => {
     setData(prevData => {
       const updatedData = prevData.map(customer => 
         customer.id === customerId 
-          ? { ...customer, lastPulled: timestamp }
+          ? { 
+              ...customer, 
+              lastPulled: timestamp,
+              ...(databaseExists !== undefined && { database_exists: databaseExists })
+            }
           : customer
       );
       return updatedData;
@@ -72,9 +76,41 @@ function App() {
     setFilteredData(prevFilteredData => {
       const updatedFilteredData = prevFilteredData.map(customer => 
         customer.id === customerId 
-          ? { ...customer, lastPulled: timestamp }
+          ? { 
+              ...customer, 
+              lastPulled: timestamp,
+              ...(databaseExists !== undefined && { database_exists: databaseExists })
+            }
           : customer
       );
+      return updatedFilteredData;
+    });
+  };
+
+  const handleDatabaseStatusUpdate = (customerId: string, databaseExists: any) => {
+    console.log('=== DATABASE STATUS UPDATE CALLED ===');
+    console.log('Customer ID:', customerId);
+    console.log('Database exists value:', databaseExists);
+    console.log('Current data length:', data.length);
+    console.log('Current filteredData length:', filteredData.length);
+    
+    setData(prevData => {
+      const updatedData = prevData.map(customer => 
+        customer.id === customerId 
+          ? { ...customer, database_exists: databaseExists }
+          : customer
+      );
+      console.log('Updated data for customer:', customerId, 'New database_exists:', databaseExists);
+      return updatedData;
+    });
+    
+    setFilteredData(prevFilteredData => {
+      const updatedFilteredData = prevFilteredData.map(customer => 
+        customer.id === customerId 
+          ? { ...customer, database_exists: databaseExists }
+          : customer
+      );
+      console.log('Updated filteredData for customer:', customerId, 'New database_exists:', databaseExists);
       return updatedFilteredData;
     });
   };
@@ -172,6 +208,7 @@ function App() {
               'ok_to_bill', 'priority_support', 'resident_hosting', 'test_environment', 'test_domain', 'itar_hosting_bc'
             ]}
             onTimestampUpdate={handleTimestampUpdate}
+            onDatabaseStatusUpdate={handleDatabaseStatusUpdate}
           />
         </>
       )}

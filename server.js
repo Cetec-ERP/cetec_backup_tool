@@ -752,6 +752,57 @@ app.post("/api/backup/request", async (req, res) => {
   }
 });
 
+// Endpoint to check a specific customer's database existence
+app.post("/api/mysql/check", async (req, res) => {
+  try {
+    const { customerId, domain, residentHosting, itarHosting } = req.body;
+    
+    if (!customerId || !domain) {
+      return res.status(400).json({ error: "Customer ID and domain are required" });
+    }
+    
+    // Use the same logic as the initial database checks
+    let databaseExists = false;
+    
+    if (itarHosting || (residentHosting && !residentDBsConfig[domain])) {
+      // ITAR hosting or resident hosting without database mapping
+      databaseExists = 'unavailable';
+    } else {
+      // Check if database exists on MySQL server
+      try {
+        let dbName = domain;
+        if (residentHosting && residentDBsConfig[domain]) {
+          dbName = residentDBsConfig[domain];
+        }
+        
+        const [rows] = await mysqlPool.execute(
+          'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?',
+          [dbName]
+        );
+        
+        databaseExists = rows.length > 0;
+      } catch (mysqlError) {
+        databaseExists = 'mysql_error';
+      }
+    }
+    
+    res.json({
+      success: true,
+      customerId: customerId,
+      domain: domain,
+      databaseExists: databaseExists
+    });
+    
+  } catch (error) {
+    console.error('Error in MySQL check:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "MySQL check failed"
+    });
+  }
+});
+
 // Start the server
 app.listen(port, async () => {
   console.log(`Server running at http://localhost:${port}`);
