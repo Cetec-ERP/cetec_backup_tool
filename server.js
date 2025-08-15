@@ -114,11 +114,17 @@ async function loadTimestampData() {
     const dataDir = path.dirname(timestampDataPath);
     await fs.mkdir(dataDir, { recursive: true });
     
+    console.log('Timestamp data path:', timestampDataPath);
+    console.log('Data directory:', dataDir);
+    
     // Try to load existing data
     const data = await fs.readFile(timestampDataPath, 'utf8');
-    return JSON.parse(data);
+    const parsedData = JSON.parse(data);
+    console.log('Timestamp data loaded successfully:', Object.keys(parsedData).length, 'entries');
+    return parsedData;
   } catch (error) {
     // If file doesn't exist or can't be read, return empty object
+    console.error('Error loading timestamp data:', error.message);
     return {};
   }
 }
@@ -607,6 +613,33 @@ app.get("/api/cetec/customer", async (req, res) => {
       mysqlStatus = 'skipped';
     }
 
+    // Load and add timestamp data for each customer
+    console.log('=== STARTING TIMESTAMP ENRICHMENT ===');
+    const timestampData = await loadTimestampData();
+    console.log('=== TIMESTAMP DEBUG ===');
+    console.log('Timestamp data loaded:', Object.keys(timestampData).length, 'entries');
+    console.log('Sample timestamp keys:', Object.keys(timestampData).slice(0, 5));
+    console.log('Looking for customer 4300, timestamp data:', timestampData['4300']);
+    
+    enrichedData = enrichedData.map(customer => {
+      // Convert customer ID to string for consistent lookup
+      const customerIdStr = String(customer.id);
+      const timestampInfo = timestampData[customerIdStr] || timestampData[customer.id];
+      
+      if (customer.id === 4300) {
+        console.log('Found customer 4300!');
+        console.log('Customer ID type:', typeof customer.id);
+        console.log('Customer ID string:', customerIdStr);
+        console.log('Timestamp lookup result:', timestampInfo);
+      }
+      
+      return {
+        ...customer,
+        lastPulled: timestampInfo ? timestampInfo.lastPulled : null
+      };
+    });
+    console.log('=== TIMESTAMP ENRICHMENT COMPLETE ===');
+
     // Step 4: Prepare final response
     
     // Calculate summary statistics for display
@@ -648,137 +681,6 @@ app.get("/api/cetec/customer", async (req, res) => {
   }
 });
 
-// Fast endpoint for API data only (no MySQL enrichment)
-app.get("/api/cetec/customer/fast", async (req, res) => {
-  let cetecUrl = '';
-  
-  try {
-    const { id, name, external_key, columns, preshared_token } = req.query;
-    
-    if (!preshared_token) {
-      return res.status(400).json({ error: "preshared_token is required" });
-    }
-
-    // Build query string with all parameters
-    const queryParams = new URLSearchParams();
-    if (id) queryParams.append('id', id);
-    if (name) queryParams.append('name', name);
-    if (external_key) queryParams.append('external_key', external_key);
-    if (columns) queryParams.append('columns', columns);
-    
-    // Always request only billing-enabled customers to reduce data transfer and processing
-    queryParams.append('ok_to_bill', '1');
-    
-    // Limit columns to only what we need for better performance
-    if (!columns) {
-      queryParams.append('columns', 'id,name,domain,ok_to_bill,priority_support,resident_hosting,test_environment,test_domain,itar_hosting_bc,num_prod_users,num_full_users');
-    }
-    
-    queryParams.append('preshared_token', preshared_token);
-
-    let apiUrl = process.env.API_URL || 'https://4-19-fifo.cetecerpdevel.com';
-    
-    // Ensure the URL has a protocol
-    if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
-      apiUrl = `https://${apiUrl}`;
-    }
-    
-    cetecUrl = `${apiUrl}/api/customer?${queryParams.toString()}`;
-    
-    const response = await axios.get(cetecUrl, {
-      timeout: 10000,
-    });
-
-    let responseData = response.data;
-    
-    // Filter customers by ok_to_bill since the API parameter may not be working as expected
-    if (Array.isArray(responseData)) {
-      
-      responseData = responseData.filter(customer => {
-        const okToBill = customer.ok_to_bill;
-        // Filter for truthy values (1, true, "1", etc.) and exclude falsy values (0, false, "", null, undefined)
-        return okToBill && okToBill !== 0 && okToBill !== '' && okToBill !== '0' && okToBill !== 'false';
-      });
-    } else {
-    }
-
-    // Add database_exists field based on hosting status (no MySQL checking)
-    responseData = responseData.map(customer => {
-      const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
-      const isItarHosting = customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1;
-      const hasValidDomain = customer.domain && customer.domain.trim() !== '' && customer.domain !== 'undefined';
-      
-      let dbExistsValue;
-      if (!hasValidDomain) {
-        dbExistsValue = 'invalid_domain';
-      } else if (isResidentHosting) {
-        dbExistsValue = 'resident_hosting';
-      } else if (isItarHosting) {
-        dbExistsValue = 'itar_hosting';
-      } else {
-        dbExistsValue = 'mysql_disabled';
-      }
-      
-      return { ...customer, database_exists: dbExistsValue };
-    });
-
-    // Load and add timestamp data for each customer
-    const timestampData = await loadTimestampData();
-    responseData = responseData.map(customer => {
-      const timestampInfo = timestampData[customer.id];
-      return {
-        ...customer,
-        lastPulled: timestampInfo ? timestampInfo.lastPulled : null
-      };
-    });
-
-    // Calculate summary statistics for display
-    const totalCustomers = responseData.length;
-    const existingDatabases = responseData.filter(customer => customer.database_exists === true).length;
-    const residentHosting = responseData.filter(customer => customer.database_exists === 'resident_hosting').length;
-    const itarHosting = responseData.filter(customer => customer.database_exists === 'itar_hosting').length;
-    const invalidDomains = responseData.filter(customer => customer.database_exists === 'invalid_domain').length;
-    const noDatabase = responseData.filter(customer => customer.database_exists === false).length;
-
-    const result = {
-      customers: responseData,
-      metadata: {
-        total_customers: totalCustomers,
-        mysql_enabled: false,
-        mysql_status: 'skipped',
-        api_url: cetecUrl,
-        timestamp: new Date().toISOString(),
-        summary: {
-          total_customers: totalCustomers,
-          existing_databases: existingDatabases,
-          resident_hosting: residentHosting,
-          itar_hosting: itarHosting,
-          invalid_domains: invalidDomains,
-          no_database: noDatabase
-        },
-        processing_steps: {
-          api_fetch: 'completed',
-          billing_filter: 'completed', // Backend filtering applied
-          mysql_enrichment: 'skipped'
-        }
-      }
-    };
-
-    res.json(result);
-    
-  } catch (error) {
-    console.error("Fast endpoint error:", error.message);
-    
-    res.status(500).json({ 
-      error: "Failed to fetch customer data",
-      details: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      url: cetecUrl
-    });
-  }
-});
-
 // Endpoint to record pull button clicks
 app.post("/api/pull/record", async (req, res) => {
   try {
@@ -811,6 +713,41 @@ app.post("/api/pull/record", async (req, res) => {
       success: false,
       error: error.message,
       message: "Internal server error"
+    });
+  }
+});
+
+// Endpoint to proxy backup requests (avoiding CORS issues)
+app.post("/api/backup/request", async (req, res) => {
+  try {
+    const { dbname } = req.body;
+    
+    if (!dbname) {
+      return res.status(400).json({ error: "Database name is required" });
+    }
+    
+    const backupApiUrl = `http://dev.cetecerpdevel.com:3399/getbackup?password=REMOVED&dbname=${encodeURIComponent(dbname)}`;
+    
+    const backupResponse = await fetch(backupApiUrl);
+    
+    if (!backupResponse.ok) {
+      throw new Error(`Backup request failed: ${backupResponse.status}`);
+    }
+    
+    const backupResult = await backupResponse.json();
+    
+    res.json({
+      success: true,
+      result: backupResult,
+      message: "Backup request successful"
+    });
+    
+  } catch (error) {
+    console.error('Error in backup request:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Backup request failed"
     });
   }
 });

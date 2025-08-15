@@ -75,10 +75,16 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
       }
       
       // Now attempt the backup request (this can fail without affecting the timestamp)
-      const backupApiUrl = `http://dev.cetecerpdevel.com:3399/getbackup?password=REMOVED&dbname=${encodeURIComponent(dbName)}`;
+      const backupApiUrl = `http://localhost:3001/api/backup/request`;
       
       try {
-        const backupResponse = await fetch(backupApiUrl);
+        const backupResponse = await fetch(backupApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ dbname: dbName }),
+        });
         
         if (!backupResponse.ok) {
           throw new Error(`Backup request failed: ${backupResponse.status}`);
