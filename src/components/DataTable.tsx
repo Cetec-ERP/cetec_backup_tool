@@ -98,8 +98,8 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
                  key === 'test_environment' ? 'Test Environment' :
                  key === 'test_domain' ? 'Test Domain' :
                  key === 'itar_hosting_bc' ? 'ITAR Hosting' :
-                 key === 'database_exists' ? 'Database Exists' :
-                 key === 'actions' ? 'Actions' :
+                 key === 'database_exists' ? 'Devel Environment' :
+                 key === 'actions' ? 'Pull Backup' :
                  key.charAt(0).toUpperCase() + key.slice(1)}
               </th>
             ))}
@@ -135,7 +135,7 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
                         className="action-button"
                         onClick={() => handleActionClick(item)}
                       >
-                        Action
+                        Pull
                       </button>
                     </td>
                   );
@@ -149,30 +149,54 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
                   const fullUsers = item.num_full_users || 0;
                   value = prodUsers + fullUsers;
                 } else if (key === 'database_exists') {
-                  const dbExists = item.database_exists;
-                  if (dbExists === true || dbExists === 'true' || dbExists === 1) {
-                    value = 'Yes';
-                  } else if (dbExists === false || dbExists === 'false' || dbExists === 0) {
-                    value = 'No';
-                  } else if (dbExists === 'resident_hosting') {
-                    value = 'Resident Hosting';
-                  } else if (dbExists === 'itar_hosting') {
-                    value = 'ITAR Hosting';
-                  } else if (dbExists === 'mysql_disabled') {
-                    value = 'MySQL Disabled';
-                  } else if (dbExists === 'mysql_error') {
-                    value = 'MySQL Error';
-                  } else if (dbExists === 'batch_timeout') {
-                    value = 'Batch Timeout';
-                  } else if (dbExists === 'invalid_domain') {
-                    value = 'Invalid Domain';
-                  } else if (dbExists === 'unavailable') {
-                    value = 'Unavailable';
-                  } else if (dbExists === null) {
-                    value = 'Error';
-                  } else {
-                    value = '—';
+                  // For Devel Environment column, show buttons only for eligible customers
+                  const domain = item.domain;
+                  if (!domain || domain === 'undefined' || domain.trim() === '') {
+                    return (
+                      <td key={key} className="table-cell">
+                        <span className="no-action">—</span>
+                      </td>
+                    );
                   }
+                  
+                  // Check if we should show the Devel button (same logic as Pull buttons)
+                  const isItarHosting = Boolean(item.itar_hosting_bc);
+                  const isResidentHosting = Boolean(item.resident_hosting);
+                  const hasResidentDatabase = isResidentHosting && item.database_exists === 'unavailable';
+                  
+                  // Don't show button for ITAR hosting or resident hosting without database mapping
+                  if (isItarHosting || hasResidentDatabase) {
+                    return (
+                      <td key={key} className="table-cell">
+                        <span className="no-action">—</span>
+                      </td>
+                    );
+                  }
+                  
+                  // Determine the URL to use
+                  let customerUrl;
+                  
+                  if (isResidentHosting) {
+                    // For resident hosting, check if we have a database mapping
+                    // This would need to be implemented based on your resident database mapping logic
+                    // For now, using the domain as fallback
+                    customerUrl = `http://${domain}.cetecerpdevel.com`;
+                  } else {
+                    // For regular hosting, use the domain
+                    customerUrl = `http://${domain}.cetecerpdevel.com`;
+                  }
+                  
+                  // Create clickable button
+                  return (
+                    <td key={key} className="table-cell">
+                      <button 
+                        className="devel-environment-btn"
+                        onClick={() => window.open(customerUrl, '_blank', 'noopener,noreferrer')}
+                      >
+                        Devel
+                      </button>
+                    </td>
+                  );
                 } else {
                   value = item[key];
                 }
