@@ -1,4 +1,6 @@
 import { AppConfig, getConfigValue } from './app-config.types';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 // Default configuration fallback
 const defaultConfig: AppConfig = {
@@ -119,7 +121,6 @@ export class ConfigLoader {
       this.config = { ...defaultConfig, ...loadedConfig };
       this.loaded = true;
       
-      console.log('Configuration loaded successfully');
       return this.config;
     } catch (error) {
       console.warn('Failed to load configuration file, using defaults:', error);

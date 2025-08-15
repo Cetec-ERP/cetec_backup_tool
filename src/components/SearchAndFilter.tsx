@@ -11,7 +11,6 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
     priority_support: '',
     resident_hosting: '',
     test_environment: '',
-    test_domain: '',
     itar_hosting_bc: '',
     database_exists: ''
   });
@@ -61,7 +60,6 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
       priority_support: '',
       resident_hosting: '',
       test_environment: '',
-      test_domain: '',
       itar_hosting_bc: '',
       database_exists: ''
     });
@@ -194,21 +192,6 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
               >
                 <option value="">All</option>
                 {getUniqueValues('test_environment').map(value => (
-                  <option key={value} value={value}>{value}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label htmlFor="test_domain" className="filter-label">Test Domain</label>
-              <select
-                id="test_domain"
-                value={filters.test_domain}
-                onChange={(e) => setFilters({ ...filters, test_domain: e.target.value })}
-                className="filter-select"
-              >
-                <option value="">All</option>
-                {getUniqueValues('test_domain').map(value => (
                   <option key={value} value={value}>{value}</option>
                 ))}
               </select>

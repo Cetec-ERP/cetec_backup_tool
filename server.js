@@ -736,13 +736,8 @@ app.listen(port, async () => {
   
   // Initialize MySQL pool if configured
   if (isMySQLConfigured) {
-    console.log('MySQL integration enabled: Yes');
-    console.log(`API URL: ${process.env.API_URL || 'not set'}`);
     await initializeMySQLPool();
     await loadResidentDBsConfig(); // Load resident DBs config on startup
-  } else {
-    console.log('MySQL integration enabled: No');
-    console.log(`API URL: ${process.env.API_URL || 'not set'}`);
   }
 }).on('error', (error) => {
   console.error('Failed to start server:', error.message);
