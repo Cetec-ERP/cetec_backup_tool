@@ -1,30 +1,6 @@
 {
-  "1073": {
-    "lastPulled": "2025-08-15T02:37:55.072Z",
-    "customerId": 1073
-  },
-  "1093": {
-    "lastPulled": "2025-08-15T03:00:12.040Z",
-    "customerId": 1093
-  },
   "4300": {
-    "lastPulled": "2025-08-15T02:44:09.234Z",
+    "lastPulled": "2025-08-15T03:06:35.855Z",
     "customerId": 4300
-  },
-  "12345": {
-    "lastPulled": "2025-08-15T02:20:02.308Z",
-    "customerId": "12345"
-  },
-  "67890": {
-    "lastPulled": "2025-08-15T02:20:02.300Z",
-    "customerId": "67890"
-  },
-  "99999": {
-    "lastPulled": "2025-08-15T02:26:15.233Z",
-    "customerId": "99999"
-  },
-  "TEST123": {
-    "lastPulled": "2025-08-15T02:27:39.597Z",
-    "customerId": "TEST123"
   }
 }
