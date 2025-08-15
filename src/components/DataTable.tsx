@@ -28,8 +28,7 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
     'test_environment',
     'itar_hosting_bc',
     'database_exists',
-    'lastPulled',
-    'actions' // New actions column
+    'actions' // Actions column (Pull button + timestamp)
   ];
 
   // Filter to only show the columns we want
@@ -103,7 +102,6 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
                  key === 'test_environment' ? 'Test Environment' :
                  key === 'itar_hosting_bc' ? 'ITAR Hosting' :
                  key === 'database_exists' ? 'Devel Environment' :
-                 key === 'lastPulled' ? 'Last Pulled' :
                  key === 'actions' ? 'Pull Backup' :
                  key.charAt(0).toUpperCase() + key.slice(1)}
               </th>
@@ -128,14 +126,25 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
                     );
                   }
                   
+                  // Get timestamp info for helper text
+                  const lastPulled = item.lastPulled;
+                  const timestampText = lastPulled 
+                    ? `Last pulled: ${new Date(lastPulled).toLocaleDateString()} ${new Date(lastPulled).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                    : 'Never pulled';
+                  
                   return (
                     <td key={key} className="table-cell">
-                      <button 
-                        className="action-button"
-                        onClick={() => handleActionClick(item)}
-                      >
-                        Pull
-                      </button>
+                      <div className="action-button-container">
+                        <button 
+                          className="action-button"
+                          onClick={() => handleActionClick(item)}
+                        >
+                          Pull
+                        </button>
+                        <div className="timestamp-helper">
+                          {timestampText}
+                        </div>
+                      </div>
                     </td>
                   );
                 }
@@ -194,25 +203,6 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
                       >
                         Devel
                       </button>
-                    </td>
-                  );
-                } else if (key === 'lastPulled') {
-                  const lastPulled = item.lastPulled;
-                  if (!lastPulled) {
-                    return <td key={key} className="table-cell">—</td>;
-                  }
-                  
-                  // Format the timestamp nicely
-                  const date = new Date(lastPulled);
-                  const formattedDate = date.toLocaleDateString();
-                  const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                  
-                  return (
-                    <td key={key} className="table-cell">
-                      <div style={{ fontSize: '12px' }}>
-                        <div>{formattedDate}</div>
-                        <div style={{ color: '#6c757d' }}>{formattedTime}</div>
-                      </div>
                     </td>
                   );
                 } else {
