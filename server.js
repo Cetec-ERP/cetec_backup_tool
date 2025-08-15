@@ -110,21 +110,12 @@ const timestampDataPath = path.join(__dirname, 'data', 'pull-timestamps.json');
 // Load timestamp data
 async function loadTimestampData() {
   try {
-    // Ensure data directory exists
     const dataDir = path.dirname(timestampDataPath);
     await fs.mkdir(dataDir, { recursive: true });
-    
-    console.log('Timestamp data path:', timestampDataPath);
-    console.log('Data directory:', dataDir);
-    
-    // Try to load existing data
     const data = await fs.readFile(timestampDataPath, 'utf8');
     const parsedData = JSON.parse(data);
-    console.log('Timestamp data loaded successfully:', Object.keys(parsedData).length, 'entries');
     return parsedData;
   } catch (error) {
-    // If file doesn't exist or can't be read, return empty object
-    console.error('Error loading timestamp data:', error.message);
     return {};
   }
 }
@@ -614,31 +605,18 @@ app.get("/api/cetec/customer", async (req, res) => {
     }
 
     // Load and add timestamp data for each customer
-    console.log('=== STARTING TIMESTAMP ENRICHMENT ===');
     const timestampData = await loadTimestampData();
-    console.log('=== TIMESTAMP DEBUG ===');
-    console.log('Timestamp data loaded:', Object.keys(timestampData).length, 'entries');
-    console.log('Sample timestamp keys:', Object.keys(timestampData).slice(0, 5));
-    console.log('Looking for customer 4300, timestamp data:', timestampData['4300']);
     
     enrichedData = enrichedData.map(customer => {
       // Convert customer ID to string for consistent lookup
       const customerIdStr = String(customer.id);
       const timestampInfo = timestampData[customerIdStr] || timestampData[customer.id];
       
-      if (customer.id === 4300) {
-        console.log('Found customer 4300!');
-        console.log('Customer ID type:', typeof customer.id);
-        console.log('Customer ID string:', customerIdStr);
-        console.log('Timestamp lookup result:', timestampInfo);
-      }
-      
       return {
         ...customer,
         lastPulled: timestampInfo ? timestampInfo.lastPulled : null
       };
     });
-    console.log('=== TIMESTAMP ENRICHMENT COMPLETE ===');
 
     // Step 4: Prepare final response
     
