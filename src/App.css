@@ -175,6 +175,12 @@ body {
   min-width: 200px;
 }
 
+.data-table th:nth-child(11), .data-table td:nth-child(11) { /* Last Pulled column */
+  width: 120px;
+  max-width: 120px;
+  text-align: center;
+}
+
 /* Special handling for buttons to prevent truncation */
 .table-cell .action-button,
 .table-cell .devel-environment-btn {

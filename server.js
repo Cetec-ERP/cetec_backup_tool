@@ -99,8 +99,55 @@ async function loadResidentDBsConfig() {
     residentDBsConfig = JSON.parse(configData);
     console.log(`Resident DBs configuration loaded: ${Object.keys(residentDBsConfig).length} mappings`);
   } catch (error) {
-    console.warn('Failed to load resident DBs configuration, using defaults:', error.message);
+    console.warn('Warning: Could not load resident DBs configuration:', error.message);
     residentDBsConfig = {};
+  }
+}
+
+// Timestamp tracking functionality
+const timestampDataPath = path.join(__dirname, 'data', 'pull-timestamps.json');
+
+// Load timestamp data
+async function loadTimestampData() {
+  try {
+    // Ensure data directory exists
+    const dataDir = path.dirname(timestampDataPath);
+    await fs.mkdir(dataDir, { recursive: true });
+    
+    // Try to load existing data
+    const data = await fs.readFile(timestampDataPath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    // If file doesn't exist or can't be read, return empty object
+    return {};
+  }
+}
+
+// Save timestamp data
+async function saveTimestampData(data) {
+  try {
+    await fs.writeFile(timestampDataPath, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Error saving timestamp data:', error);
+  }
+}
+
+// Record pull button click
+async function recordPullClick(customerId) {
+  try {
+    const timestampData = await loadTimestampData();
+    const now = new Date().toISOString();
+    
+    timestampData[customerId] = {
+      lastPulled: now,
+      customerId: customerId
+    };
+    
+    await saveTimestampData(timestampData);
+    return { success: true, timestamp: now };
+  } catch (error) {
+    console.error('Error recording pull click:', error);
+    return { success: false, error: error.message };
   }
 }
 
@@ -278,6 +325,9 @@ app.use((req, res, next) => {
     next();
   }
 });
+
+// Parse JSON bodies
+app.use(express.json());
 
 // Test MySQL connection endpoint
 app.get("/api/test-mysql", async (req, res) => {
@@ -683,6 +733,16 @@ app.get("/api/cetec/customer/fast", async (req, res) => {
       return { ...customer, database_exists: dbExistsValue };
     });
 
+    // Load and add timestamp data for each customer
+    const timestampData = await loadTimestampData();
+    responseData = responseData.map(customer => {
+      const timestampInfo = timestampData[customer.id];
+      return {
+        ...customer,
+        lastPulled: timestampInfo ? timestampInfo.lastPulled : null
+      };
+    });
+
     // Calculate summary statistics for display
     const totalCustomers = responseData.length;
     const existingDatabases = responseData.filter(customer => customer.database_exists === true).length;
@@ -726,6 +786,42 @@ app.get("/api/cetec/customer/fast", async (req, res) => {
       status: error.response?.status,
       statusText: error.response?.statusText,
       url: cetecUrl
+    });
+  }
+});
+
+// Endpoint to record pull button clicks
+app.post("/api/pull/record", async (req, res) => {
+  try {
+    const { customerId } = req.body;
+    
+    if (!customerId) {
+      return res.status(400).json({ error: "Customer ID is required" });
+    }
+    
+    const result = await recordPullClick(customerId);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        customerId: customerId,
+        timestamp: result.timestamp,
+        message: "Pull timestamp recorded successfully"
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: result.error,
+        message: "Failed to record pull timestamp"
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error recording pull click:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Internal server error"
     });
   }
 });
