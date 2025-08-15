@@ -26,7 +26,6 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
     'priority_support',
     'resident_hosting',
     'test_environment',
-    'test_domain',
     'itar_hosting_bc',
     'database_exists',
     'actions' // New actions column
@@ -46,8 +45,6 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
         return;
       }
       
-      console.log('Getting database name for domain:', domain);
-      
       // Call our backend to get the correct database name
       const dbNameResponse = await fetch(`/api/backup/dbname?domain=${encodeURIComponent(domain)}`);
       
@@ -58,13 +55,8 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
       const dbNameData = await dbNameResponse.json();
       const dbName = dbNameData.dbname;
       
-      console.log('Database name resolved:', dbNameData);
-      
       // Construct the backup API URL
       const backupApiUrl = `http://dev.cetecerpdevel.com:3399/getbackup?password=REMOVED&dbname=${encodeURIComponent(dbName)}`;
-      
-      console.log('Making backup request for:', dbName);
-      console.log('Backup API URL:', backupApiUrl);
       
       // Make the backup request
       const backupResponse = await fetch(backupApiUrl);
@@ -74,7 +66,6 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
       }
       
       const backupResult = await backupResponse.json();
-      console.log('Backup request successful:', backupResult);
       
       // You can add success handling here (e.g., show notification, update UI, etc.)
       
@@ -96,7 +87,6 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
                  key === 'priority_support' ? 'Priority Support' :
                  key === 'resident_hosting' ? 'Resident Hosting' :
                  key === 'test_environment' ? 'Test Environment' :
-                 key === 'test_domain' ? 'Test Domain' :
                  key === 'itar_hosting_bc' ? 'ITAR Hosting' :
                  key === 'database_exists' ? 'Devel Environment' :
                  key === 'actions' ? 'Pull Backup' :
@@ -114,13 +104,8 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
                   const isItarHosting = Boolean(item.itar_hosting_bc); // Any truthy value means ITAR hosting
                   const isDatabaseUnavailable = item.database_exists === 'unavailable';
                   
-                  // Debug logging to understand the values
-                  console.log(`Row ${index}: itar_hosting_bc =`, item.itar_hosting_bc, `(type: ${typeof item.itar_hosting_bc}), isItarHosting =`, isItarHosting);
-                  console.log(`Row ${index}: database_exists =`, item.database_exists, `(type: ${typeof item.database_exists}), isDatabaseUnavailable =`, isDatabaseUnavailable);
-                  
                   // Don't show button for ITAR hosting or unavailable database rows
                   if (isItarHosting || isDatabaseUnavailable) {
-                    console.log(`Row ${index}: Hiding button - ITAR hosting or unavailable database`);
                     return (
                       <td key={key} className="table-cell">
                         <span className="no-action">—</span>
@@ -128,7 +113,6 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
                     );
                   }
                   
-                  console.log(`Row ${index}: Showing button - eligible for action`);
                   return (
                     <td key={key} className="table-cell">
                       <button 

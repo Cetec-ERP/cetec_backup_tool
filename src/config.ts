@@ -25,9 +25,3 @@ export const config = {
 };
 
 // Log configuration for debugging (remove in production)
-console.log('API Configuration:', {
-  domain: config.cetecDomain,
-  protocol: config.protocol,
-  hasToken: !!config.presharedToken,
-  exampleUrl: config.getCustomerUrl({ id: '1' })
-});

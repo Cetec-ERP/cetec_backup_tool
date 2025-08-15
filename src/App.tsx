@@ -20,22 +20,19 @@ function App() {
       const endpoint = 'api/cetec/customer'; // Always use the full endpoint for MySQL checking
       const url = `http://localhost:3001/${endpoint}?preshared_token=${config.presharedToken}`;
       
-      console.log(`Starting backup process: ${url} (MySQL: enabled)`);
-      
       const response = await axios.get(url, { timeout: 60000 }); // Increased timeout for MySQL operations
       
       // Handle the new enriched data structure
       if (response.data && response.data.customers) {
         setData(response.data.customers);
         setFilteredData(response.data.customers); // Initialize filtered data
-        console.log(`Received ${response.data.customers.length} customers with MySQL enrichment`);
         if (response.data.metadata) {
-          console.log('Processing metadata:', response.data.metadata);
+          // console.log('Processing metadata:', response.data.metadata); // Removed console.log
         }
       } else {
         setData(response.data); // Fallback for old data structure
         setFilteredData(response.data); // Initialize filtered data
-        console.log('Received data in legacy format');
+        // console.log('Received data in legacy format'); // Removed console.log
       }
       
       setLoading(false);
