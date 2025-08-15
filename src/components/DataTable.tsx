@@ -39,12 +39,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
 
   const handleActionClick = async (item: any) => {
     try {
-      console.log('Pull button clicked for item:', item);
-      console.log('Customer ID:', item.id);
-      console.log('Current lastPulled value:', item.lastPulled);
-      
       // Record the pull timestamp FIRST, before doing anything else
-      console.log('Recording timestamp for customer ID:', item.id);
       const timestampResponse = await fetch('http://localhost:3001/api/pull/record', {
         method: 'POST',
         headers: {
@@ -58,12 +53,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
       } else {
         // Update the UI with the new timestamp immediately
         const timestampData = await timestampResponse.json();
-        console.log('Timestamp recorded successfully:', timestampData);
         if (timestampData.success && onTimestampUpdate) {
-          console.log('Calling onTimestampUpdate with:', item.id, timestampData.timestamp);
           onTimestampUpdate(item.id, timestampData.timestamp);
-        } else {
-          console.log('onTimestampUpdate not available or timestamp recording failed');
         }
       }
       
@@ -80,16 +71,10 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
       // Check if this is a resident hosting customer with a database mapping
       if (item.resident_hosting && item.database_exists === 'unavailable') {
         // This customer has resident hosting but no database mapping, so we can't do a backup
-        console.log('Customer has resident hosting but no database mapping, skipping backup request');
         return;
       }
       
-      // For now, use the domain as the database name
-      // In the future, you could add logic here to resolve database names if needed
-      console.log('Using database name for backup:', dbName);
-      
       // Now attempt the backup request (this can fail without affecting the timestamp)
-      console.log('Attempting backup request for database:', dbName);
       const backupApiUrl = `http://dev.cetecerpdevel.com:3399/getbackup?password=REMOVED&dbname=${encodeURIComponent(dbName)}`;
       
       try {
@@ -100,7 +85,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
         }
         
         const backupResult = await backupResponse.json();
-        console.log('Backup request successful:', backupResult);
         
       } catch (backupError) {
         console.warn('Backup request failed, but timestamp was recorded:', backupError);

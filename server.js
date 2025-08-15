@@ -644,18 +644,7 @@ app.get("/api/cetec/customer", async (req, res) => {
     res.json(result);
     
   } catch (error) {
-    console.error("Error in customer data processing:", error);
-    console.error("Full error object:", JSON.stringify(error, null, 2));
-    
-    // Send more detailed error information
-    res.status(500).json({ 
-      error: "Failed to process customer data request",
-      details: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      url: cetecUrl,
-      step_failed: error.response ? 'api_fetch' : 'unknown'
-    });
+    console.error("Error in customer data processing:", error.message);
   }
 });
 
