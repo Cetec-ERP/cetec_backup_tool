@@ -4,9 +4,10 @@ interface DataTableProps {
   data: any[];
   title?: string;
   columns?: string[]; // Optional array of column keys to display
+  onTimestampUpdate?: (customerId: string, timestamp: string) => void; // Callback to update timestamp in parent
 }
 
-const DataTable: React.FC<DataTableProps> = ({ data }) => {
+const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
   if (!data || data.length === 0) {
     return <div className="no-data">No data available</div>;
   }
@@ -38,6 +39,10 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
 
   const handleActionClick = async (item: any) => {
     try {
+      console.log('Pull button clicked for item:', item);
+      console.log('Customer ID:', item.id);
+      console.log('Current lastPulled value:', item.lastPulled);
+      
       // First, get the correct database name from our backend
       const domain = item.domain;
       if (!domain) {
@@ -56,6 +61,7 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
       const dbName = dbNameData.dbname;
       
       // Record the pull timestamp
+      console.log('Recording timestamp for customer ID:', item.id);
       const timestampResponse = await fetch('/api/pull/record', {
         method: 'POST',
         headers: {
@@ -66,6 +72,16 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
       
       if (!timestampResponse.ok) {
         console.warn('Failed to record pull timestamp:', timestampResponse.status);
+      } else {
+        // Update the UI with the new timestamp
+        const timestampData = await timestampResponse.json();
+        console.log('Timestamp recorded successfully:', timestampData);
+        if (timestampData.success && onTimestampUpdate) {
+          console.log('Calling onTimestampUpdate with:', item.id, timestampData.timestamp);
+          onTimestampUpdate(item.id, timestampData.timestamp);
+        } else {
+          console.log('onTimestampUpdate not available or timestamp recording failed');
+        }
       }
       
       // Construct the backup API URL
