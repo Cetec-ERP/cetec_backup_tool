@@ -256,40 +256,91 @@
   font-style: italic;
 }
 
-/* Filter Section */
+/* Filter Toggle Section */
+.filter-toggle-section {
+  text-align: center;
+  margin: 15px 0;
+  padding: 10px 0;
+  border-top: 1px solid #e9ecef;
+}
+
+.filter-toggle-btn {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.filter-toggle-btn:hover {
+  background-color: #5a6268;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+}
+
+.filter-toggle-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.25);
+}
+
+.filter-toggle-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(108, 117, 125, 0.3);
+}
+
+/* Filter Section - Now conditionally visible */
 .filter-section {
   border-top: 1px solid #e9ecef;
-  padding-top: 20px;
+  padding-top: 15px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+    overflow: visible;
+  }
 }
 
 .filter-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-bottom: 15px;
   align-items: end;
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 
 .filter-label {
   font-weight: 600;
   color: #495057;
-  font-size: 13px;
+  font-size: 10px;
 }
 
 .filter-select {
-  padding: 8px 12px;
+  padding: 3px 4px;
   border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-size: 15px;
+  border-radius: 3px;
+  font-size: 11px;
   background-color: white;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  min-height: 42px;
+  min-height: 24px;
   color: #212529;
 }
 
@@ -308,16 +359,16 @@
 }
 
 .clear-filters-btn {
-  padding: 8px 16px;
+  padding: 3px 6px;
   background-color: #6c757d;
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 3px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 160px;
+  min-width: 60px;
 }
 
 .clear-filters-btn:hover:not(:disabled) {
