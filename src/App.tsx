@@ -24,6 +24,9 @@ function App() {
       
       // Handle the new enriched data structure
       if (response.data && response.data.customers) {
+        console.log('Sample customer data:', response.data.customers[0]);
+        console.log('Customer ID type:', typeof response.data.customers[0]?.id);
+        console.log('Sample customer lastPulled:', response.data.customers[0]?.lastPulled);
         setData(response.data.customers);
         setFilteredData(response.data.customers); // Initialize filtered data
         if (response.data.metadata) {
@@ -57,6 +60,32 @@ function App() {
 
   const handleSubmit = () => {
     startBackupProcess();
+  };
+
+  const handleTimestampUpdate = (customerId: string, timestamp: string) => {
+    console.log('handleTimestampUpdate called with:', customerId, timestamp);
+    console.log('Current data length:', data.length);
+    console.log('Current filteredData length:', filteredData.length);
+    
+    setData(prevData => {
+      const updatedData = prevData.map(customer => 
+        customer.id === customerId 
+          ? { ...customer, lastPulled: timestamp }
+          : customer
+      );
+      console.log('Updated data for customer:', customerId, 'New timestamp:', timestamp);
+      return updatedData;
+    });
+    
+    setFilteredData(prevFilteredData => {
+      const updatedFilteredData = prevFilteredData.map(customer => 
+        customer.id === customerId 
+          ? { ...customer, lastPulled: timestamp }
+          : customer
+      );
+      console.log('Updated filteredData for customer:', customerId, 'New timestamp:', timestamp);
+      return updatedFilteredData;
+    });
   };
 
   return (
@@ -151,6 +180,7 @@ function App() {
               'id', 'name', 'total_users', 'domain', 'database_exists',
               'ok_to_bill', 'priority_support', 'resident_hosting', 'test_environment', 'test_domain', 'itar_hosting_bc'
             ]}
+            onTimestampUpdate={handleTimestampUpdate}
           />
         </>
       )}
