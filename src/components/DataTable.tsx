@@ -28,6 +28,7 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
     'test_environment',
     'itar_hosting_bc',
     'database_exists',
+    'lastPulled',
     'actions' // New actions column
   ];
 
@@ -54,6 +55,19 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
       
       const dbNameData = await dbNameResponse.json();
       const dbName = dbNameData.dbname;
+      
+      // Record the pull timestamp
+      const timestampResponse = await fetch('/api/pull/record', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ customerId: item.id }),
+      });
+      
+      if (!timestampResponse.ok) {
+        console.warn('Failed to record pull timestamp:', timestampResponse.status);
+      }
       
       // Construct the backup API URL
       const backupApiUrl = `http://dev.cetecerpdevel.com:3399/getbackup?password=REMOVED&dbname=${encodeURIComponent(dbName)}`;
@@ -89,6 +103,7 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
                  key === 'test_environment' ? 'Test Environment' :
                  key === 'itar_hosting_bc' ? 'ITAR Hosting' :
                  key === 'database_exists' ? 'Devel Environment' :
+                 key === 'lastPulled' ? 'Last Pulled' :
                  key === 'actions' ? 'Pull Backup' :
                  key.charAt(0).toUpperCase() + key.slice(1)}
               </th>
@@ -179,6 +194,25 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
                       >
                         Devel
                       </button>
+                    </td>
+                  );
+                } else if (key === 'lastPulled') {
+                  const lastPulled = item.lastPulled;
+                  if (!lastPulled) {
+                    return <td key={key} className="table-cell">—</td>;
+                  }
+                  
+                  // Format the timestamp nicely
+                  const date = new Date(lastPulled);
+                  const formattedDate = date.toLocaleDateString();
+                  const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  
+                  return (
+                    <td key={key} className="table-cell">
+                      <div style={{ fontSize: '12px' }}>
+                        <div>{formattedDate}</div>
+                        <div style={{ color: '#6c757d' }}>{formattedTime}</div>
+                      </div>
                     </td>
                   );
                 } else {
