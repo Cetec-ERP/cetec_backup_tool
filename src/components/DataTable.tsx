@@ -37,8 +37,51 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
     allKeys.includes(col) || col === 'actions'
   );
 
-  const handleActionClick = (domain: string) => {
-    console.log('Action button clicked for domain:', domain);
+  const handleActionClick = async (item: any) => {
+    try {
+      // First, get the correct database name from our backend
+      const domain = item.domain;
+      if (!domain) {
+        console.error('No domain available for this customer');
+        return;
+      }
+      
+      console.log('Getting database name for domain:', domain);
+      
+      // Call our backend to get the correct database name
+      const dbNameResponse = await fetch(`/api/backup/dbname?domain=${encodeURIComponent(domain)}`);
+      
+      if (!dbNameResponse.ok) {
+        throw new Error(`Failed to get database name: ${dbNameResponse.status}`);
+      }
+      
+      const dbNameData = await dbNameResponse.json();
+      const dbName = dbNameData.dbname;
+      
+      console.log('Database name resolved:', dbNameData);
+      
+      // Construct the backup API URL
+      const backupApiUrl = `http://dev.cetecerpdevel.com:3399/getbackup?password=REMOVED&dbname=${encodeURIComponent(dbName)}`;
+      
+      console.log('Making backup request for:', dbName);
+      console.log('Backup API URL:', backupApiUrl);
+      
+      // Make the backup request
+      const backupResponse = await fetch(backupApiUrl);
+      
+      if (!backupResponse.ok) {
+        throw new Error(`Backup request failed: ${backupResponse.status}`);
+      }
+      
+      const backupResult = await backupResponse.json();
+      console.log('Backup request successful:', backupResult);
+      
+      // You can add success handling here (e.g., show notification, update UI, etc.)
+      
+    } catch (error) {
+      console.error('Error in backup process:', error);
+      // You can add error handling here (e.g., show error message, retry logic, etc.)
+    }
   };
 
   return (
@@ -90,7 +133,7 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
                     <td key={key} className="table-cell">
                       <button 
                         className="action-button"
-                        onClick={() => handleActionClick(item.domain || 'No Domain')}
+                        onClick={() => handleActionClick(item)}
                       >
                         Action
                       </button>
