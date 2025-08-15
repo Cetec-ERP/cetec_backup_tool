@@ -60,7 +60,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
       const dbNameData = await dbNameResponse.json();
       const dbName = dbNameData.dbname;
       
-      // Record the pull timestamp
+      // Record the pull timestamp FIRST, before making the backup request
       console.log('Recording timestamp for customer ID:', item.id);
       const timestampResponse = await fetch('/api/pull/record', {
         method: 'POST',
@@ -73,7 +73,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
       if (!timestampResponse.ok) {
         console.warn('Failed to record pull timestamp:', timestampResponse.status);
       } else {
-        // Update the UI with the new timestamp
+        // Update the UI with the new timestamp immediately
         const timestampData = await timestampResponse.json();
         console.log('Timestamp recorded successfully:', timestampData);
         if (timestampData.success && onTimestampUpdate) {
@@ -84,19 +84,24 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
         }
       }
       
-      // Construct the backup API URL
+      // Now attempt the backup request (this can fail without affecting the timestamp)
+      console.log('Attempting backup request for database:', dbName);
       const backupApiUrl = `http://dev.cetecerpdevel.com:3399/getbackup?password=REMOVED&dbname=${encodeURIComponent(dbName)}`;
       
-      // Make the backup request
-      const backupResponse = await fetch(backupApiUrl);
-      
-      if (!backupResponse.ok) {
-        throw new Error(`Backup request failed: ${backupResponse.status}`);
+      try {
+        const backupResponse = await fetch(backupApiUrl);
+        
+        if (!backupResponse.ok) {
+          throw new Error(`Backup request failed: ${backupResponse.status}`);
+        }
+        
+        const backupResult = await backupResponse.json();
+        console.log('Backup request successful:', backupResult);
+        
+      } catch (backupError) {
+        console.warn('Backup request failed, but timestamp was recorded:', backupError);
+        // Don't re-throw the error since we want to keep the timestamp update
       }
-      
-      const backupResult = await backupResponse.json();
-      
-      // You can add success handling here (e.g., show notification, update UI, etc.)
       
     } catch (error) {
       console.error('Error in backup process:', error);
