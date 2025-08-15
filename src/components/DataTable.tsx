@@ -43,26 +43,9 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
       console.log('Customer ID:', item.id);
       console.log('Current lastPulled value:', item.lastPulled);
       
-      // First, get the correct database name from our backend
-      const domain = item.domain;
-      if (!domain) {
-        console.error('No domain available for this customer');
-        return;
-      }
-      
-      // Call our backend to get the correct database name
-      const dbNameResponse = await fetch(`/api/backup/dbname?domain=${encodeURIComponent(domain)}`);
-      
-      if (!dbNameResponse.ok) {
-        throw new Error(`Failed to get database name: ${dbNameResponse.status}`);
-      }
-      
-      const dbNameData = await dbNameResponse.json();
-      const dbName = dbNameData.dbname;
-      
-      // Record the pull timestamp FIRST, before making the backup request
+      // Record the pull timestamp FIRST, before doing anything else
       console.log('Recording timestamp for customer ID:', item.id);
-      const timestampResponse = await fetch('/api/pull/record', {
+      const timestampResponse = await fetch('http://localhost:3001/api/pull/record', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,6 +66,27 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate }) => {
           console.log('onTimestampUpdate not available or timestamp recording failed');
         }
       }
+      
+      // Get the domain for the backup request
+      const domain = item.domain;
+      if (!domain) {
+        console.error('No domain available for this customer');
+        return;
+      }
+      
+      // Determine the database name to use for the backup request
+      let dbName = domain;
+      
+      // Check if this is a resident hosting customer with a database mapping
+      if (item.resident_hosting && item.database_exists === 'unavailable') {
+        // This customer has resident hosting but no database mapping, so we can't do a backup
+        console.log('Customer has resident hosting but no database mapping, skipping backup request');
+        return;
+      }
+      
+      // For now, use the domain as the database name
+      // In the future, you could add logic here to resolve database names if needed
+      console.log('Using database name for backup:', dbName);
       
       // Now attempt the backup request (this can fail without affecting the timestamp)
       console.log('Attempting backup request for database:', dbName);
