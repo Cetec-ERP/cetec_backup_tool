@@ -15,6 +15,23 @@ const TableRow: React.FC<TableRowProps> = ({
   hiddenDevelButtons, 
   onActionClick 
 }) => {
+  // Normalize priority support values to only valid options
+  const normalizePrioritySupport = (value: string): string => {
+    const normalizedValue = value.toLowerCase().trim();
+    
+    // Map valid values
+    if (normalizedValue === 'lite' || normalizedValue === 'l') {
+      return 'Lite';
+    } else if (normalizedValue === 'standard' || normalizedValue === 'std' || normalizedValue === 's') {
+      return 'Standard';
+    } else if (normalizedValue === 'enterprise' || normalizedValue === 'ent' || normalizedValue === 'e') {
+      return 'Enterprise';
+    }
+    
+    // Return 'false' for any invalid values
+    return 'false';
+  };
+
   const renderCell = (key: string) => {
     if (key === 'actions') {
       // Check if we should show the action button
@@ -96,6 +113,17 @@ const TableRow: React.FC<TableRowProps> = ({
           </button>
         </td>
       );
+    } else if (key === 'priority_support') {
+      // Normalize priority support values
+      const normalizedValue = normalizePrioritySupport(String(item[key] || ''));
+      if (normalizedValue === 'false') {
+        return (
+          <td key={key} className="table-cell">
+            <span className="no-action">—</span>
+          </td>
+        );
+      }
+      value = normalizedValue;
     } else {
       value = item[key];
     }

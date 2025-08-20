@@ -199,6 +199,17 @@ function App() {
                     {filteredData.filter((customer: any) => customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1).length}
                   </span>
                 </div>
+                <div className="summary-item">
+                  <span className="summary-label">Priority Support:</span>
+                  <span className="summary-value info">
+                    {filteredData.filter((customer: any) => {
+                      const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                      return prioritySupport === 'lite' || prioritySupport === 'l' || 
+                             prioritySupport === 'standard' || prioritySupport === 'std' || prioritySupport === 's' ||
+                             prioritySupport === 'enterprise' || prioritySupport === 'ent' || prioritySupport === 'e';
+                    }).length}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
