@@ -77,15 +77,20 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       return null;
     }
     
-    // If database exists and has been pulled before, show refresh icon
+    // If database exists and has been pulled before, show refresh button
     if (item.database_exists === true && item.lastPulled) {
       return (
         <button 
-          className="refresh-icon-button"
+          className="action-button refresh"
           onClick={() => onActionClick(item)}
           title="Re-pull backup"
         >
-          🔄
+          <svg className="refresh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M3 21v-5h5"/>
+          </svg>
         </button>
       );
     }
