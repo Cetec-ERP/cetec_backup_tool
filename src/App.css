@@ -718,3 +718,18 @@ body {
   background: transparent;
   color: #17a2b8;
 }
+
+/* Priority Support specific colors */
+.priority-lite {
+  color: #6c757d;
+  margin-right: 8px;
+}
+
+.priority-standard {
+  color: #007bff;
+  margin-right: 8px;
+}
+
+.priority-enterprise {
+  color: #28a745;
+}
