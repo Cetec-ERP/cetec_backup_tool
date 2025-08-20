@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { config } from './config';
 import DataTable from './components/DataTable';
@@ -8,7 +8,7 @@ import './App.css';
 function App() {
   const [data, setData] = useState<any[]>([]);
   const [filteredData, setFilteredData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true since we fetch automatically
   const [error, setError] = useState<string | null>(null);
 
   const startBackupProcess = async () => {
@@ -68,6 +68,11 @@ function App() {
       setLoading(false);
     }
   };
+
+  // Automatically fetch data when component mounts
+  useEffect(() => {
+    startBackupProcess();
+  }, []); // Empty dependency array means this runs once when component mounts
 
   const handleSubmit = () => {
     startBackupProcess();
@@ -137,22 +142,12 @@ function App() {
       </h1>
       
       <div className="button-container">
-        <button 
-          className="backup-button"
-          onClick={handleSubmit}
-        >
-          Fetch Customer Data
-        </button>
-        
-        <p>
-          Click to get a list of active customers, environment links, and backup info. 
-        </p>
       </div>
 
       {loading && (
         <div className="loading-container">
           <p className='header-text'>
-            Processing request and checking databases...
+            Loading customer data and checking databases...
           </p>
         </div>
       )}
@@ -173,13 +168,23 @@ function App() {
                 data={data} 
                 onFilterChange={setFilteredData}
               />
+              
+              <div className="refresh-section">
+                <button 
+                  className="refresh-button"
+                  onClick={startBackupProcess}
+                  disabled={loading}
+                >
+                  {loading ? 'Loading...' : 'Refresh Data'}
+                </button>
+              </div>
             </div>
             
             {/* Summary Statistics */}
             <div className="summary-container">
               <div className="summary-stats">
                 <div className="summary-item">
-                  <span className="summary-label">Total Customers:</span>
+                  <span className="summary-label">Total:</span>
                   <span className="summary-value">{filteredData.length}</span>
                 </div>
                 {/* MySQL specific summary items */}
@@ -190,8 +195,8 @@ function App() {
                   </span>
                 </div>
                 <div className="summary-item">
-                  <span className="summary-label">Resident Hosting:</span>
-                  <span className="summary-value info">
+                  <span className="summary-label">Resident:</span>
+                  <span className="summary-value warning">
                     {filteredData.filter((customer: any) => customer.resident_hosting === true || customer.resident_hosting === 1).length}
                   </span>
                 </div>
@@ -213,26 +218,26 @@ function App() {
                 </div>
                 <div className="summary-item">
                   <span className="summary-label">Priority Support:</span>
-                  <span className="summary-value">
-                    <span className="priority-lite">
+                  <div className="priority-chips">
+                    <span className="priority-chip lite">
                       {filteredData.filter((customer: any) => {
                         const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
                         return prioritySupport === 'lite' || prioritySupport === 'l';
                       }).length}
                     </span>
-                    <span className="priority-standard">
+                    <span className="priority-chip standard">
                       {filteredData.filter((customer: any) => {
                         const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
                         return prioritySupport === 'standard' || prioritySupport === 'std' || prioritySupport === 's';
                       }).length}
                     </span>
-                    <span className="priority-enterprise">
+                    <span className="priority-chip enterprise">
                       {filteredData.filter((customer: any) => {
                         const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
                         return prioritySupport === 'enterprise' || prioritySupport === 'ent' || prioritySupport === 'e';
                       }).length}
                     </span>
-                  </span>
+                  </div>
                 </div>
               </div>
             </div>
