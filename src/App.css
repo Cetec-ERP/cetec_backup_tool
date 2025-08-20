@@ -10,6 +10,7 @@ body {
 #root {
   min-height: 100vh;
   background-color: #f8f9fa;
+  margin: 0 auto;
 }
 
 /* Main App Container */
@@ -44,6 +45,12 @@ body {
   font-weight: 400;
 }
 
+.button-container {
+  display:flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 /* Main Button Styling */
 .fetch-button {
   background: #007bff;
@@ -57,6 +64,10 @@ body {
   transition: all 0.2s ease;
   box-shadow: none;
   letter-spacing: normal;
+}
+
+.header-text {
+  text-align: center;
 }
 
 .fetch-button:hover {
@@ -223,12 +234,16 @@ body {
 /* Search Section */
 .search-section {
   margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
 .search-input-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
 }
 
 .search-label {
@@ -244,7 +259,7 @@ body {
   font-size: 14px;
   transition: border-color 0.2s ease;
   width: 100%;
-  max-width: 400px;
+  max-width: 300px;
   background: white;
   color: #333;
 }
@@ -279,6 +294,98 @@ body {
   transition: all 0.2s ease;
   min-width: 140px;
   box-shadow: none;
+  margin-left: 24px;
+}
+
+/* Filter Button Container for Modal Positioning */
+.filter-button-container {
+  position: relative;
+}
+
+/* Floating Filter Modal */
+.filter-modal {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 600px;
+  max-width: 90vw;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  margin-top: 8px;
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+/* Ensure modal doesn't extend beyond viewport */
+@media (max-width: 768px) {
+  .filter-modal {
+    right: 0;
+    width: calc(100vw - 40px);
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-modal {
+    right: 0;
+    width: calc(100vw - 20px);
+    max-width: 350px;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e9ecef;
+  background: #f8f9fa;
+  border-radius: 8px 8px 0 0;
+}
+
+.filter-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-modal-btn:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.filter-modal-content {
+  padding: 20px;
 }
 
 .filter-toggle-btn:hover {
@@ -305,81 +412,70 @@ body {
 }
 
 .filter-row {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
   gap: 12px;
   margin-bottom: 20px;
   align-items: end;
+  flex-wrap: wrap;
 }
 
 .filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex: 1;
+  min-width: 200px;
 }
 
 .filter-label {
+  display: block;
   font-weight: 600;
   color: #333;
-  font-size: 12px;
+  font-size: 14px;
+  margin-bottom: 6px;
 }
 
 .filter-select {
+  width: 100%;
   padding: 8px 12px;
   border: 1px solid #e9ecef;
   border-radius: 6px;
-  font-size: 13px;
-  background-color: white;
-  transition: border-color 0.2s ease;
-  min-height: 36px;
+  font-size: 14px;
+  background: white;
   color: #333;
+  transition: border-color 0.2s ease;
 }
 
 .filter-select:focus {
   outline: none;
   border-color: #007bff;
-  box-shadow: none;
 }
 
 .filter-actions {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  grid-column: 1 / -1;
+  justify-content: flex-end;
   margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
 }
 
 .clear-filters-btn {
-  padding: 8px 16px;
-  background-color: #6c757d;
+  background-color: #dc3545;
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
+  padding: 8px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 120px;
-  box-shadow: none;
 }
 
 .clear-filters-btn:hover:not(:disabled) {
-  background-color: #5a6268;
-  transform: none;
-  box-shadow: none;
-}
-
-.clear-filters-btn:active:not(:disabled) {
-  transform: none;
-  box-shadow: none;
+  background-color: #c82333;
 }
 
 .clear-filters-btn:disabled {
   background-color: #e9ecef;
   color: #6c757d;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
 /* Action Button in Table */
@@ -465,19 +561,102 @@ body {
 }
 
 /* Summary Statistics */
+.combined-header-section {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  margin: 24px auto;
+  gap: 24px;
+  max-width: 1400px;
+  padding: 0 20px;
+  width: 100%;
+}
+
+.search-filter-row {
+  flex: 0 0 auto;
+  min-width: 300px;
+}
+
 .summary-container {
-  margin: 24px 0;
+  margin: 0;
   padding: 0;
   background: transparent;
   border: none;
   box-shadow: none;
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 1200px) {
+  .combined-header-section {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    max-width: 800px;
+  }
+  
+  .search-filter-row {
+    min-width: auto;
+    width: 100%;
+    max-width: 500px;
+  }
+  
+  .summary-container {
+    flex: none;
+    width: 100%;
+    max-width: none;
+  }
+  
+  .summary-stats {
+    gap: 16px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .combined-header-section {
+    max-width: 100%;
+    padding: 0 16px;
+  }
+  
+  .search-filter-row {
+    max-width: 100%;
+  }
+  
+  .summary-container {
+    max-width: none;
+    width: 100%;
+  }
+  
+  .summary-stats {
+    gap: 12px;
+    justify-content: flex-start;
+  }
+  
+  .summary-item {
+    font-size: 12px;
+  }
+  
+  .summary-label {
+    font-size: 12px;
+  }
+  
+  .summary-value {
+    font-size: 14px;
+  }
 }
 
 .summary-stats {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 24px;
   align-items: center;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  min-width: 0;
+  width: 100%;
 }
 
 .summary-item {
@@ -489,6 +668,9 @@ body {
   border: none;
   box-shadow: none;
   transition: none;
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-width: fit-content;
 }
 
 .summary-item:hover {

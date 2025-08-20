@@ -43,9 +43,9 @@ function App() {
       
       // Provide more helpful error messages for common issues
       if (err.code === 'ECONNABORTED') {
-        errorMessage = 'Request timed out. MySQL operations may take longer than expected for large datasets. Try again or use the fast mode (without MySQL) for quicker results.';
+        errorMessage = 'Request timed out. Please check your nework connection and try again.';
       } else if (err.response?.status === 500) {
-        errorMessage = 'Server error occurred. Check the backend logs for more details.';
+        errorMessage = 'Server error occurred. Please try again.';
       } else if (err.message?.includes('Network Error')) {
         errorMessage = 'Network error. Please check your connection and try again.';
       }
@@ -118,7 +118,8 @@ function App() {
   return (
     <div className="app-container">
       <h1 className="app-header">
-        Cetec ERP Internal Backup Tool
+        {/* Cetec ERP Internal Backup Tool */}
+        Backups
       </h1>
       
       <div className="button-container">
@@ -129,73 +130,75 @@ function App() {
           Fetch Customer Data
         </button>
         
-        <p className="button-description">
-          Click to fetch customers with database verification (slower but more complete)
+        <p>
+          Click to get a list of active customers, environment links, and backup info. 
         </p>
       </div>
 
       {loading && (
         <div className="loading-container">
-          <p>
-            Processing request and checking databases... (this may take a minute for large datasets)
-          </p>
-          <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
-            ⏱️ MySQL operations can take time when processing many customers
+          <p className='header-text'>
+            Processing request and checking databases...
           </p>
         </div>
       )}
       
       {error && (
         <div className="error-container">
-          <strong>Error:</strong> {error}
+          <strong className='header-text'>Error:</strong> {error}
         </div>
       )}
 
       {!loading && !error && data && (
         <>
-          {/* Search and Filter */}
-          <SearchAndFilter 
-            data={data} 
-            onFilterChange={setFilteredData}
-          />
-          
-          {/* Summary Statistics */}
-          <div className="summary-container">
-            <div className="summary-stats">
-              <div className="summary-item">
-                <span className="summary-label">Total Customers:</span>
-                <span className="summary-value">{filteredData.length}</span>
-              </div>
-              {/* MySQL specific summary items */}
-              <div className="summary-item">
-                <span className="summary-label">Existing Databases:</span>
-                <span className="summary-value success">
-                  {filteredData.filter((customer: any) => customer.database_exists === true).length}
-                </span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">No Database:</span>
-                <span className="summary-value warning">
-                  {filteredData.filter((customer: any) => customer.database_exists === false).length}
-                </span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Resident Hosting:</span>
-                <span className="summary-value info">
-                  {filteredData.filter((customer: any) => customer.resident_hosting === true || customer.resident_hosting === 1).length}
-                </span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Unavailable:</span>
-                <span className="summary-value info">
-                  {filteredData.filter((customer: any) => customer.database_exists === 'unavailable').length}
-                </span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">ITAR Hosting:</span>
-                <span className="summary-value info">
-                  {filteredData.filter((customer: any) => customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1).length}
-                </span>
+          {/* Combined Search, Filter, and Summary Section */}
+          <div className="combined-header-section">
+            {/* Search and Filter */}
+            <div className="search-filter-row">
+              <SearchAndFilter 
+                data={data} 
+                onFilterChange={setFilteredData}
+              />
+            </div>
+            
+            {/* Summary Statistics */}
+            <div className="summary-container">
+              <div className="summary-stats">
+                <div className="summary-item">
+                  <span className="summary-label">Total Customers:</span>
+                  <span className="summary-value">{filteredData.length}</span>
+                </div>
+                {/* MySQL specific summary items */}
+                <div className="summary-item">
+                  <span className="summary-label">Existing Databases:</span>
+                  <span className="summary-value success">
+                    {filteredData.filter((customer: any) => customer.database_exists === true).length}
+                  </span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">No Database:</span>
+                  <span className="summary-value warning">
+                    {filteredData.filter((customer: any) => customer.database_exists === false).length}
+                  </span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">Resident Hosting:</span>
+                  <span className="summary-value info">
+                    {filteredData.filter((customer: any) => customer.resident_hosting === true || customer.resident_hosting === 1).length}
+                  </span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">Unavailable:</span>
+                  <span className="summary-value info">
+                    {filteredData.filter((customer: any) => customer.database_exists === 'unavailable').length}
+                  </span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">ITAR Hosting:</span>
+                  <span className="summary-value info">
+                    {filteredData.filter((customer: any) => customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1).length}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
