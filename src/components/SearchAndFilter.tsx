@@ -47,16 +47,12 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
       modal.style.right = '';
       modal.style.left = '';
       
-      // Check if modal extends beyond right edge
-      if (buttonRect.right + modalRect.width > window.innerWidth) {
-        // Position to the left of the button
-        modal.style.right = 'auto';
-        modal.style.left = '0';
-      }
+      // Default: position to the right of the button
+      modal.style.left = '0';
       
-      // Check if modal extends beyond left edge
-      if (buttonRect.left - modalRect.width < 0) {
-        // Position to the right of the button
+      // Check if modal extends beyond right edge of viewport
+      if (buttonRect.left + modalRect.width > window.innerWidth) {
+        // Position to the left of the button if it would go off-screen to the right
         modal.style.left = 'auto';
         modal.style.right = '0';
       }
@@ -65,13 +61,46 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
 
   // Get unique values for each filterable column
   const getUniqueValues = (column: string) => {
+    if (column === 'priority_support') {
+      // Return priority support values in specific order
+      return ['Lite', 'Standard', 'Enterprise'];
+    }
+    
     const values = new Set<string>();
     data.forEach(item => {
       if (item[column] !== undefined && item[column] !== null && item[column] !== '') {
-        values.add(String(item[column]));
+        let value = String(item[column]);
+        
+        // Normalize priority_support values
+        if (column === 'priority_support') {
+          value = normalizePrioritySupport(value);
+          // Only add valid priority support values
+          if (value !== 'false') {
+            values.add(value);
+          }
+        } else {
+          values.add(value);
+        }
       }
     });
     return Array.from(values).sort();
+  };
+
+  // Normalize priority support values to only valid options
+  const normalizePrioritySupport = (value: string): string => {
+    const normalizedValue = value.toLowerCase().trim();
+    
+    // Map valid values
+    if (normalizedValue === 'lite' || normalizedValue === 'l') {
+      return 'Lite';
+    } else if (normalizedValue === 'standard' || normalizedValue === 'std' || normalizedValue === 's') {
+      return 'Standard';
+    } else if (normalizedValue === 'enterprise' || normalizedValue === 'ent' || normalizedValue === 'e') {
+      return 'Enterprise';
+    }
+    
+    // Return 'false' for any invalid values
+    return 'false';
   };
 
   // Apply filters and search
@@ -92,8 +121,14 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
     Object.entries(filters).forEach(([column, value]) => {
       if (value && value !== '') {
         filteredData = filteredData.filter(item => {
-          const itemValue = String(item[column] || '');
-          return itemValue === value;
+          if (column === 'priority_support') {
+            // Normalize the item's priority support value for comparison
+            const normalizedItemValue = normalizePrioritySupport(String(item[column] || ''));
+            return normalizedItemValue === value;
+          } else {
+            const itemValue = String(item[column] || '');
+            return itemValue === value;
+          }
         });
       }
     });

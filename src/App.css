@@ -306,7 +306,7 @@ body {
 .filter-modal {
   position: absolute;
   top: 100%;
-  right: 0;
+  left: 0;
   width: 600px;
   max-width: 90vw;
   background: white;
