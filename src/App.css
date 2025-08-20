@@ -235,8 +235,9 @@ body {
 .search-section {
   margin-bottom: 20px;
   display: flex;
-  align-items: center;
-  gap: 24px;
+  align-items: baseline; /* Change to baseline for better text alignment */
+  gap: 16px;
+  flex: 1;
 }
 
 .search-input-group {
@@ -262,11 +263,15 @@ body {
   max-width: 300px;
   background: white;
   color: #333;
+  height: 38px;
+  box-sizing: border-box;
+  line-height: 1.2; /* Ensure consistent line height */
+  vertical-align: middle; /* Better vertical alignment */
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #0d6efd;
   box-shadow: none;
 }
 
@@ -295,6 +300,29 @@ body {
   min-width: 140px;
   box-shadow: none;
   margin-left: 24px;
+  height: 38px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  vertical-align: baseline;
+}
+
+.filter-toggle-btn:hover {
+  background-color: #495057;
+  transform: none;
+  box-shadow: none;
+}
+
+.filter-toggle-btn:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.filter-toggle-btn:active {
+  transform: none;
+  box-shadow: none;
 }
 
 /* Filter Button Container for Modal Positioning */
@@ -575,6 +603,10 @@ body {
 .search-filter-row {
   flex: 0 0 auto;
   min-width: 300px;
+  display: flex;
+  align-items: baseline; /* Match the search section alignment */
+  gap: 16px;
+  height: auto; /* Allow natural height for baseline alignment */
 }
 
 .summary-container {
@@ -584,8 +616,8 @@ body {
   border: none;
   box-shadow: none;
   flex: 1;
-  min-width: 0;
-  overflow: visible;
+  display: flex;
+  align-items: center; /* Center vertically with search area */
 }
 
 /* Responsive design for smaller screens */
@@ -657,6 +689,8 @@ body {
   padding-bottom: 8px;
   min-width: 0;
   width: 100%;
+  height: 38px; /* Match the height of search area elements */
+  line-height: 38px; /* Center text vertically within the height */
 }
 
 .summary-item {
@@ -671,6 +705,8 @@ body {
   flex-shrink: 0;
   white-space: nowrap;
   min-width: fit-content;
+  height: 38px; /* Match search area element height */
+  line-height: 1.2; /* Consistent with search area elements */
 }
 
 .summary-item:hover {
@@ -688,48 +724,119 @@ body {
 
 .summary-value {
   font-weight: 600;
-  font-size: 16px;
-  padding: 0;
-  border-radius: 0;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 16px;
   min-width: auto;
-  text-align: left;
-  color: #333;
+  text-align: center;
+  color: white;
   border: none;
-  background: transparent;
-  transition: none;
+  background: #6c757d;
+  transition: all 0.2s ease;
+  height: auto;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .summary-value.success {
-  background: transparent;
-  color: #28a745;
+  background: #20c997;
+  color: white;
 }
 
 .summary-value.warning {
-  background: transparent;
-  color: #ffc107;
+  background: #fd7e14;
+  color: white;
 }
 
 .summary-value.error {
-  background: transparent;
-  color: #dc3545;
+  background: #dc3545;
+  color: white;
 }
 
 .summary-value.info {
-  background: transparent;
-  color: #17a2b8;
+  background: #6f42c1;
+  color: white;
 }
 
-/* Priority Support specific colors */
-.priority-lite {
+/* Priority Support Chips */
+.priority-chips {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.priority-chip {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  color: white;
+}
+
+.priority-chip.lite {
+  background: #6c757d;
+}
+
+.priority-chip.standard {
+  background: #0d6efd;
+}
+
+.priority-chip.enterprise {
+  background: #198754;
+}
+
+/* Refresh Section */
+.refresh-section {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+}
+
+.refresh-button {
+  background: #0d6efd;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: none;
+  letter-spacing: normal;
+  height: 38px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+  line-height: 1.2;
+  vertical-align: baseline;
+}
+
+.refresh-button:hover:not(:disabled) {
+  background: #0b5ed7;
+  transform: none;
+  box-shadow: none;
+}
+
+.refresh-button:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+.refresh-button:disabled {
+  background: #e9ecef;
   color: #6c757d;
-  margin-right: 8px;
-}
-
-.priority-standard {
-  color: #007bff;
-  margin-right: 8px;
-}
-
-.priority-enterprise {
-  color: #28a745;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }

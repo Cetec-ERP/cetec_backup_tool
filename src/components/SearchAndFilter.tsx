@@ -157,7 +157,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
           <input
             id="search"
             type="text"
-            placeholder="Search by Customer Name or Domain..."
+            placeholder="Search customers..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
