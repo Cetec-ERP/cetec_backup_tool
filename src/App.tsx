@@ -170,15 +170,9 @@ function App() {
                 </div>
                 {/* MySQL specific summary items */}
                 <div className="summary-item">
-                  <span className="summary-label">Existing Databases:</span>
+                  <span className="summary-label">Has Backup:</span>
                   <span className="summary-value success">
                     {filteredData.filter((customer: any) => customer.database_exists === true).length}
-                  </span>
-                </div>
-                <div className="summary-item">
-                  <span className="summary-label">No Database:</span>
-                  <span className="summary-value warning">
-                    {filteredData.filter((customer: any) => customer.database_exists === false).length}
                   </span>
                 </div>
                 <div className="summary-item">
@@ -188,26 +182,42 @@ function App() {
                   </span>
                 </div>
                 <div className="summary-item">
-                  <span className="summary-label">Unavailable:</span>
+                  <span className="summary-label">ITAR:</span>
                   <span className="summary-value info">
-                    {filteredData.filter((customer: any) => customer.database_exists === 'unavailable').length}
-                  </span>
-                </div>
-                <div className="summary-item">
-                  <span className="summary-label">ITAR Hosting:</span>
-                  <span className="summary-value info">
-                    {filteredData.filter((customer: any) => customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1).length}
+                    {filteredData.filter((customer: any) => {
+                      const itarValue = customer.itar_hosting_bc;
+                      // Debug: log ITAR values to understand the data structure
+                      if (itarValue && itarValue !== '' && itarValue !== 'false' && itarValue !== 0) {
+                        console.log('ITAR customer found:', customer.name, 'itar_hosting_bc:', itarValue);
+                      }
+                      // Check for various ITAR values: boolean true/1, string "ITAR", etc.
+                      return itarValue === true || itarValue === 1 || 
+                             (typeof itarValue === 'string' && itarValue.toLowerCase().includes('itar')) ||
+                             (itarValue && itarValue !== '' && itarValue !== 'false' && itarValue !== 0);
+                    }).length}
                   </span>
                 </div>
                 <div className="summary-item">
                   <span className="summary-label">Priority Support:</span>
-                  <span className="summary-value info">
-                    {filteredData.filter((customer: any) => {
-                      const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
-                      return prioritySupport === 'lite' || prioritySupport === 'l' || 
-                             prioritySupport === 'standard' || prioritySupport === 'std' || prioritySupport === 's' ||
-                             prioritySupport === 'enterprise' || prioritySupport === 'ent' || prioritySupport === 'e';
-                    }).length}
+                  <span className="summary-value">
+                    <span className="priority-lite">
+                      {filteredData.filter((customer: any) => {
+                        const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                        return prioritySupport === 'lite' || prioritySupport === 'l';
+                      }).length}
+                    </span>
+                    <span className="priority-standard">
+                      {filteredData.filter((customer: any) => {
+                        const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                        return prioritySupport === 'standard' || prioritySupport === 'std' || prioritySupport === 's';
+                      }).length}
+                    </span>
+                    <span className="priority-enterprise">
+                      {filteredData.filter((customer: any) => {
+                        const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                        return prioritySupport === 'enterprise' || prioritySupport === 'ent' || prioritySupport === 'e';
+                      }).length}
+                    </span>
                   </span>
                 </div>
               </div>
