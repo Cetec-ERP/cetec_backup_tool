@@ -24,14 +24,28 @@ function App() {
       
       // Handle the new enriched data structure
       if (response.data && response.data.customers) {
-        setData(response.data.customers);
-        setFilteredData(response.data.customers); // Initialize filtered data
+        // Sort customers alphabetically by name before setting state
+        const sortedCustomers = response.data.customers.sort((a: any, b: any) => {
+          const nameA = (a.name || '').toLowerCase();
+          const nameB = (b.name || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        
+        setData(sortedCustomers);
+        setFilteredData(sortedCustomers); // Initialize filtered data
         if (response.data.metadata) {
           // console.log('Processing metadata:', response.data.metadata); // Removed console.log
         }
       } else {
-        setData(response.data); // Fallback for old data structure
-        setFilteredData(response.data); // Initialize filtered data
+        // Sort customers alphabetically by name before setting state (fallback for old data structure)
+        const sortedCustomers = response.data.sort((a: any, b: any) => {
+          const nameA = (a.name || '').toLowerCase();
+          const nameB = (b.name || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        
+        setData(sortedCustomers); // Fallback for old data structure
+        setFilteredData(sortedCustomers); // Initialize filtered data
         // console.log('Received data in legacy format'); // Removed console.log
       }
       
