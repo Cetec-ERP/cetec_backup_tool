@@ -1139,6 +1139,37 @@ body {
   transform: translateY(-1px);
 }
 
+.action-button.refresh {
+  background: #0d6efd;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: fit-content;
+  width: auto;
+  max-width: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-button.refresh:hover {
+  background: #0b5ed7;
+  transform: translateY(-1px);
+}
+
+.refresh-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 .refresh-icon-button {
   background: none;
   border: none;
