@@ -1,2 +1,2 @@
 export { default as DataTable } from './DataTable';
-export { default as TableRow } from './TableRow';
+export { default as CustomerCard } from './CustomerCard';

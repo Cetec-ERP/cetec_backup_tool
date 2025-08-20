@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import TableRow from './TableRow';
+import CustomerCard from './CustomerCard';
 
 interface DataTableProps {
   data: any[];
@@ -16,31 +16,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
   if (!data || data.length === 0) {
     return <div className="no-data">No data available</div>;
   }
-
-  // Get all unique keys from the data
-  const allKeys = Array.from(
-    new Set(data.flatMap(item => Object.keys(item)))
-  );
-
-  // Define the columns we want to display and their order
-  const displayColumns = [
-    'id',
-    'name', 
-    'total_users',
-    'domain',
-    'ok_to_bill',
-    'priority_support',
-    'resident_hosting',
-    'test_environment',
-    'itar_hosting_bc',
-    'database_exists',
-    'actions' // Actions column (Pull button + timestamp)
-  ];
-
-  // Filter to only show the columns we want
-  const columnsToShow = displayColumns.filter(col => 
-    allKeys.includes(col) || col === 'actions'
-  );
 
   const handleActionClick = async (item: any) => {
     try {
@@ -159,39 +134,20 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
   };
 
   return (
-    <div className="table-container">
-      <table className="data-table">
-        <thead>
-          <tr>
-            {columnsToShow.map(key => (
-              <th key={key} className="table-header">
-                {key === 'total_users' ? 'Total Users' :
-                 key === 'ok_to_bill' ? 'OK to Bill' :
-                 key === 'priority_support' ? 'Priority Support' :
-                 key === 'resident_hosting' ? 'Resident Hosting' :
-                 key === 'test_environment' ? 'Test Environment' :
-                 key === 'itar_hosting_bc' ? 'ITAR Hosting' :
-                 key === 'database_exists' ? 'Devel Environment' :
-                 key === 'actions' ? 'Pull Backup' :
-                 key.charAt(0).toUpperCase() + key.slice(1)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((item, index) => (
-            <TableRow
-              key={index}
-              item={item}
-              columnsToShow={columnsToShow}
-              hiddenDevelButtons={hiddenDevelButtons}
-              onActionClick={handleActionClick}
-              onTimestampUpdate={onTimestampUpdate}
-              onDatabaseStatusUpdate={onDatabaseStatusUpdate}
-            />
-          ))}
-        </tbody>
-      </table>
+    <div className="customer-cards-container">
+      <h2 className="section-title">Customer Database Status</h2>
+      <div className="cards-grid">
+        {data.map((item, index) => (
+          <CustomerCard
+            key={index}
+            item={item}
+            hiddenDevelButtons={hiddenDevelButtons}
+            onActionClick={handleActionClick}
+            onTimestampUpdate={onTimestampUpdate}
+            onDatabaseStatusUpdate={onDatabaseStatusUpdate}
+          />
+        ))}
+      </div>
     </div>
   );
 };
