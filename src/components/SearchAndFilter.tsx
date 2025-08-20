@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface SearchAndFilterProps {
   data: any[];
@@ -15,6 +15,53 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
     database_exists: ''
   });
   const [showFilters, setShowFilters] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Close modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        setShowFilters(false);
+      }
+    };
+
+    if (showFilters) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFilters]);
+
+  // Position modal within viewport bounds
+  useEffect(() => {
+    if (showFilters && modalRef.current && buttonRef.current) {
+      const modal = modalRef.current;
+      const button = buttonRef.current;
+      const buttonRect = button.getBoundingClientRect();
+      const modalRect = modal.getBoundingClientRect();
+      
+      // Reset any previous positioning
+      modal.style.right = '';
+      modal.style.left = '';
+      
+      // Check if modal extends beyond right edge
+      if (buttonRect.right + modalRect.width > window.innerWidth) {
+        // Position to the left of the button
+        modal.style.right = 'auto';
+        modal.style.left = '0';
+      }
+      
+      // Check if modal extends beyond left edge
+      if (buttonRect.left - modalRect.width < 0) {
+        // Position to the right of the button
+        modal.style.left = 'auto';
+        modal.style.right = '0';
+      }
+    }
+  }, [showFilters]);
 
   // Get unique values for each filterable column
   const getUniqueValues = (column: string) => {
@@ -72,7 +119,6 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
       {/* Search Section - Always Visible */}
       <div className="search-section">
         <div className="search-input-group">
-          <label htmlFor="search" className="search-label">Search Customers</label>
           <input
             id="search"
             type="text"
@@ -82,131 +128,139 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
             className="search-input"
           />
         </div>
-      </div>
 
-      {/* Filter Toggle Button */}
-      <div className="filter-toggle-section">
-        <button 
-          type="button"
-          className="filter-toggle-btn"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          {showFilters ? 'Hide Filters' : 'Show Filters'}
-        </button>
-      </div>
+        <div className="filter-button-container" ref={modalRef}>
+          <button 
+            type="button"
+            className="filter-toggle-btn"
+            onClick={() => setShowFilters(!showFilters)}
+            ref={buttonRef}
+          >
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
+          </button>
+          
+          {/* Floating Filter Modal */}
+          {showFilters && (
+            <div className="filter-modal">
+              <div className="filter-modal-header">
+                <h3>Filters</h3>
+                <button 
+                  className="close-modal-btn"
+                  onClick={() => setShowFilters(false)}
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="filter-modal-content">
+                <div className="filter-row">
+                  <div className="filter-group">
+                    <label htmlFor="priority_support" className="filter-label">Priority Support</label>
+                    <select
+                      id="priority_support"
+                      value={filters.priority_support}
+                      onChange={(e) => setFilters({ ...filters, priority_support: e.target.value })}
+                      className="filter-select"
+                    >
+                      <option value="">All</option>
+                      {getUniqueValues('priority_support').map(value => (
+                        <option key={value} value={value}>{value}</option>
+                      ))}
+                    </select>
+                  </div>
 
-      {/* Filter Section - Conditionally Visible */}
-      {showFilters && (
-        <div className="filter-section">
-          <div className="filter-row">
-            <div className="filter-group">
-              <label htmlFor="priority_support" className="filter-label">Priority Support</label>
-              <select
-                id="priority_support"
-                value={filters.priority_support}
-                onChange={(e) => setFilters({ ...filters, priority_support: e.target.value })}
-                className="filter-select"
-              >
-                <option value="">All</option>
-                {getUniqueValues('priority_support').map(value => (
-                  <option key={value} value={value}>{value}</option>
-                ))}
-              </select>
+                  <div className="filter-group">
+                    <label htmlFor="resident_hosting" className="filter-label">Resident Hosting</label>
+                    <select
+                      id="resident_hosting"
+                      value={filters.resident_hosting}
+                      onChange={(e) => setFilters({ ...filters, resident_hosting: e.target.value })}
+                      className="filter-select"
+                    >
+                      <option value="">All</option>
+                      {getUniqueValues('resident_hosting').map(value => (
+                        <option key={value} value={value}>{value}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label htmlFor="database_exists" className="filter-label">Database Exists</label>
+                    <select
+                      id="database_exists"
+                      value={filters.database_exists}
+                      onChange={(e) => setFilters({ ...filters, database_exists: e.target.value })}
+                      className="filter-select"
+                    >
+                      <option value="">All</option>
+                      {getUniqueValues('database_exists').map(value => {
+                        let displayValue = value;
+                        const stringValue = String(value);
+                        if (stringValue === 'true') {
+                          displayValue = 'Yes';
+                        } else if (stringValue === 'false') {
+                          displayValue = 'No';
+                        } else if (stringValue === 'resident_hosting') {
+                          displayValue = 'Resident Hosting';
+                        } else if (stringValue === 'itar_hosting') {
+                          displayValue = 'ITAR Hosting';
+                        } else if (stringValue === 'mysql_disabled') {
+                          displayValue = 'MySQL Disabled';
+                        } else if (stringValue === 'mysql_error') {
+                          displayValue = 'MySQL Error';
+                        } else if (stringValue === 'batch_timeout') {
+                          displayValue = 'Batch Timeout';
+                        } else if (stringValue === 'invalid_domain') {
+                          displayValue = 'Invalid Domain';
+                        } else if (stringValue === 'unavailable') {
+                          displayValue = 'Unavailable';
+                        }
+                        return <option key={value} value={value}>{displayValue}</option>;
+                      })}
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label htmlFor="itar_hosting_bc" className="filter-label">ITAR Hosting</label>
+                    <select
+                      id="itar_hosting_bc"
+                      value={filters.itar_hosting_bc}
+                      onChange={(e) => setFilters({ ...filters, itar_hosting_bc: e.target.value })}
+                      className="filter-select"
+                    >
+                      <option value="">All</option>
+                      {getUniqueValues('itar_hosting_bc').map(value => (
+                        <option key={value} value={value}>{value}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label htmlFor="test_environment" className="filter-label">Test Environment</label>
+                    <select
+                      id="test_environment"
+                      value={filters.test_environment}
+                      onChange={(e) => setFilters({ ...filters, test_environment: e.target.value })}
+                      className="filter-select"
+                    >
+                      <option value="">All</option>
+                      {getUniqueValues('test_environment').map(value => (
+                        <option key={value} value={value}>{value}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="filter-actions">
+                  <button onClick={clearAllFilters} className="clear-filters-btn" disabled={!hasActiveFilters}>
+                    🗑️ Clear All Filters
+                  </button>
+                </div>
+              </div>
             </div>
-
-            <div className="filter-group">
-              <label htmlFor="resident_hosting" className="filter-label">Resident Hosting</label>
-              <select
-                id="resident_hosting"
-                value={filters.resident_hosting}
-                onChange={(e) => setFilters({ ...filters, resident_hosting: e.target.value })}
-                className="filter-select"
-              >
-                <option value="">All</option>
-                {getUniqueValues('resident_hosting').map(value => (
-                  <option key={value} value={value}>{value}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label htmlFor="database_exists" className="filter-label">Database Exists</label>
-              <select
-                id="database_exists"
-                value={filters.database_exists}
-                onChange={(e) => setFilters({ ...filters, database_exists: e.target.value })}
-                className="filter-select"
-              >
-                <option value="">All</option>
-                {getUniqueValues('database_exists').map(value => {
-                  let displayValue = value;
-                  const stringValue = String(value);
-                  if (stringValue === 'true') {
-                    displayValue = 'Yes';
-                  } else if (stringValue === 'false') {
-                    displayValue = 'No';
-                  } else if (stringValue === 'resident_hosting') {
-                    displayValue = 'Resident Hosting';
-                  } else if (stringValue === 'itar_hosting') {
-                    displayValue = 'ITAR Hosting';
-                  } else if (stringValue === 'mysql_disabled') {
-                    displayValue = 'MySQL Disabled';
-                  } else if (stringValue === 'mysql_error') {
-                    displayValue = 'MySQL Error';
-                  } else if (stringValue === 'batch_timeout') {
-                    displayValue = 'Batch Timeout';
-                  } else if (stringValue === 'invalid_domain') {
-                    displayValue = 'Invalid Domain';
-                  } else if (stringValue === 'unavailable') {
-                    displayValue = 'Unavailable';
-                  }
-                  return <option key={value} value={value}>{displayValue}</option>;
-                })}
-              </select>
-            </div>
-          </div>
-
-          <div className="filter-row">
-            <div className="filter-group">
-              <label htmlFor="itar_hosting_bc" className="filter-label">ITAR Hosting</label>
-              <select
-                id="itar_hosting_bc"
-                value={filters.itar_hosting_bc}
-                onChange={(e) => setFilters({ ...filters, itar_hosting_bc: e.target.value })}
-                className="filter-select"
-              >
-                <option value="">All</option>
-                {getUniqueValues('itar_hosting_bc').map(value => (
-                  <option key={value} value={value}>{value}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label htmlFor="test_environment" className="filter-label">Test Environment</label>
-              <select
-                id="test_environment"
-                value={filters.test_environment}
-                onChange={(e) => setFilters({ ...filters, test_environment: e.target.value })}
-                className="filter-select"
-              >
-                <option value="">All</option>
-                {getUniqueValues('test_environment').map(value => (
-                  <option key={value} value={value}>{value}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="filter-row">
-            <div className="filter-actions">
-              <button onClick={clearAllFilters} className="clear-filters-btn" disabled={!hasActiveFilters}>
-                🗑️ Clear All Filters
-              </button>
-            </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
