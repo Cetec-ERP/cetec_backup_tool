@@ -198,7 +198,7 @@ async function initializeMySQLPool() {
 // Check if MySQL is properly configured
 const isMySQLConfigured = mysqlConfig.host && mysqlConfig.user && mysqlConfig.password;
 
-// Function to check if a database exists for a given domain
+// Function to check if a database exists and has the usage_stats table
 async function checkDatabaseExists(domain, isResidentHosting = false) {
   if (!mysqlPool) {
     throw new Error('MySQL pool not initialized');
@@ -219,9 +219,12 @@ async function checkDatabaseExists(domain, isResidentHosting = false) {
       }
     }
     
-    // Use SELECT FROM information_schema to check if database exists
-    // This is more compatible with parameter binding than SHOW DATABASES
-    const query = 'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?';
+    // Check if database exists AND has the usage_stats table
+    const query = `
+      SELECT COUNT(*) as table_count 
+      FROM information_schema.TABLES 
+      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'usage_stats'
+    `;
     const params = [databaseName];
     
     const [rows] = await Promise.race([
@@ -231,7 +234,7 @@ async function checkDatabaseExists(domain, isResidentHosting = false) {
       )
     ]);
     
-    return rows.length > 0;
+    return rows[0].table_count > 0;
   } catch (error) {
     console.error(`Error checking database for domain ${domain}:`, error.message);
     throw error;
@@ -266,11 +269,11 @@ async function enrichCustomerData(customers) {
     const batchPromises = batch.map(async (customer) => {
       try {
         const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
-        const databaseExists = await checkDatabaseExists(customer.domain, isResidentHosting);
+        const hasUsageStatsTable = await checkDatabaseExists(customer.domain, isResidentHosting);
         
         return {
           ...customer,
-          database_exists: databaseExists
+          database_exists: hasUsageStatsTable
         };
       } catch (error) {
         console.error(`Error enriching customer ${customer.id} (${customer.domain}):`, error.message);
@@ -753,12 +756,15 @@ app.post("/api/mysql/check", async (req, res) => {
           dbName = residentDBsConfig[domain];
         }
         
+        // Check if database exists AND has the usage_stats table
         const [rows] = await mysqlPool.execute(
-          'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?',
+          `SELECT COUNT(*) as table_count 
+           FROM information_schema.TABLES 
+           WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'usage_stats'`,
           [dbName]
         );
         
-        databaseExists = rows.length > 0;
+        databaseExists = rows[0].table_count > 0;
       } catch (mysqlError) {
         databaseExists = 'mysql_error';
       }
