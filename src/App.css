@@ -595,9 +595,10 @@ body {
   align-items: flex-start;
   margin: 24px auto;
   gap: 24px;
-  max-width: 1400px;
+  max-width: 1800px;
   padding: 0 20px;
   width: 100%;
+  min-width: 0;
 }
 
 .search-filter-row {
@@ -844,6 +845,10 @@ body {
 /* Customer Cards Layout */
 .customer-cards-container {
   margin: 32px 0;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  overflow: visible;
 }
 
 .section-title {
@@ -860,7 +865,9 @@ body {
   padding: 0;
   border: 1px solid #e9ecef;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
+  width: 100%;
+  min-width: 0;
 }
 
 /* Individual Customer Card - List Style */
@@ -891,13 +898,15 @@ body {
   align-items: flex-start;
   gap: 24px;
   min-height: 60px;
+  width: 100%;
 }
 
 .customer-info {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 1;
+  flex: 0 0 50%;
+  max-width: 50%;
   min-width: 0;
 }
 
@@ -940,8 +949,8 @@ body {
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
-  flex: 1;
   min-height: 60px;
+  width: auto;
 }
 
 /* Priority Badges */
@@ -1052,16 +1061,23 @@ body {
   gap: 12px;
   align-items: flex-end;
   flex-shrink: 0;
-  min-width: 300px;
   min-height: 60px;
-  width: 300px;
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+  width: auto;
+  max-width: none;
+  position: relative;
+  z-index: 1;
 }
 
 .timestamp-display {
   text-align: right;
-  width: 100%;
-  max-width: 100%;
+  width: auto;
+  max-width: none;
   overflow: visible;
+  position: relative;
+  z-index: 1;
 }
 
 .timestamp-text {
@@ -1071,7 +1087,9 @@ body {
   white-space: nowrap;
   overflow: visible;
   text-overflow: clip;
-  max-width: 100%;
+  max-width: none;
+  position: relative;
+  z-index: 1;
 }
 
 .no-timestamp {
@@ -1081,7 +1099,9 @@ body {
   white-space: nowrap;
   overflow: visible;
   text-overflow: clip;
-  max-width: 100%;
+  max-width: none;
+  position: relative;
+  z-index: 1;
 }
 
 .action-buttons {
@@ -1090,9 +1110,11 @@ body {
   align-items: center;
   flex-wrap: wrap;
   justify-content: flex-end;
-  width: 100%;
-  max-width: 100%;
+  width: auto;
+  max-width: none;
   overflow: visible;
+  position: relative;
+  z-index: 1;
 }
 
 .action-button.primary {
@@ -1108,6 +1130,8 @@ body {
   white-space: nowrap;
   flex-shrink: 0;
   min-width: fit-content;
+  width: auto;
+  max-width: none;
 }
 
 .action-button.primary:hover {
@@ -1126,6 +1150,8 @@ body {
   color: #6c757d;
   flex-shrink: 0;
   min-width: fit-content;
+  width: auto;
+  max-width: none;
 }
 
 .refresh-icon-button:hover {
@@ -1147,6 +1173,8 @@ body {
   white-space: nowrap;
   flex-shrink: 0;
   min-width: fit-content;
+  width: auto;
+  max-width: none;
 }
 
 .devel-button:hover {
