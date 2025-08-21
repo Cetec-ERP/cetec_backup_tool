@@ -458,6 +458,11 @@ app.get("/api/cetec/customer", async (req, res) => {
     } else {
     }
     
+    // Step 2.5: Exclude specific customer ID 5165
+    if (Array.isArray(responseData)) {
+      responseData = responseData.filter(customer => customer.id !== 5165);
+    }
+    
     // Step 3: Enrich filtered data with MySQL database existence checks
     let enrichedData = responseData;
     let mysqlStatus = 'disabled';
