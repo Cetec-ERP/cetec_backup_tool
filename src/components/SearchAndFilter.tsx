@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import residentDBsConfig from '../config/resident-dbs.json';
 
 interface SearchAndFilterProps {
   data: any[];
@@ -103,6 +104,18 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
     return 'false';
   };
 
+  // Check if a domain has a resident database mapping
+  const hasResidentDatabase = (domain: string): boolean => {
+    if (!residentDBsConfig || !domain) {
+      return false;
+    }
+    
+    const hasDB = domain.toLowerCase() in residentDBsConfig || 
+           Object.keys(residentDBsConfig).some(key => key.toLowerCase() === domain.toLowerCase());
+    
+    return hasDB;
+  };
+
   // Apply filters and search
   useEffect(() => {
     let filteredData = [...data];
@@ -125,6 +138,62 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
             // Normalize the item's priority support value for comparison
             const normalizedItemValue = normalizePrioritySupport(String(item[column] || ''));
             return normalizedItemValue === value;
+          } else if (column === 'resident_hosting') {
+            // Handle resident_hosting specifically - convert both values to numbers for comparison
+            const filterValue = parseInt(value);
+            const itemValue = item[column];
+            
+            if (filterValue === 1) {
+              // Filter for "Yes" - show items with resident_hosting === 1 or === true
+              return itemValue === 1 || itemValue === true;
+            } else if (filterValue === 0) {
+              // Filter for "No" - show items with resident_hosting !== 1 and !== true
+              return itemValue !== 1 && itemValue !== true;
+            }
+            return true;
+          } else if (column === 'database_exists') {
+            // Handle database_exists specifically - distinguish between different statuses
+            const itemValue = item[column];
+            
+            if (value === 'true') {
+              // Filter for "Yes" - show items with database_exists === true
+              return itemValue === true;
+            } else if (value === 'false') {
+              // Filter for "No" - show items with database_exists === false (no backup available)
+              return itemValue === false;
+            } else if (value === 'unavailable') {
+              // Filter for "Unavailable" - show items that are ITAR or resident hosting without database mapping
+              const isItarHosting = Boolean(item.itar_hosting_bc);
+              const isResidentHosting = Boolean(item.resident_hosting);
+              const domain = item.domain;
+              
+              // First condition: ITAR hosting customers
+              if (isItarHosting) {
+                return true;
+              }
+              
+              // Second condition: Resident hosting customers without database mapping
+              if (isResidentHosting && domain) {
+                return !hasResidentDatabase(domain);
+              }
+              
+              return false;
+            } else if (value === 'resident_hosting') {
+              // Filter for "Resident Hosting" - show items with database_exists === 'resident_hosting'
+              return itemValue === 'resident_hosting';
+            } else if (value === 'itar_hosting') {
+              // Filter for "ITAR Hosting" - show items with database_exists === 'itar_hosting'
+              return itemValue === 'itar_hosting';
+            }
+            return true;
+          } else if (column === 'itar_hosting_bc') {
+            // Handle itar_hosting_bc specifically
+            const itemValue = item[column];
+            return itemValue === value;
+          } else if (column === 'test_environment') {
+            // Handle test_environment specifically
+            const itemValue = item[column];
+            return itemValue === value;
           } else {
             const itemValue = String(item[column] || '');
             return itemValue === value;
@@ -171,7 +240,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
             onClick={() => setShowFilters(!showFilters)}
             ref={buttonRef}
           >
-            {showFilters ? 'Hide Filters' : 'Show Filters'}
+            {showFilters ? 'Hide Filters' : 'Filters'}
           </button>
           
           {/* Floating Filter Modal */}
@@ -190,37 +259,40 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
               <div className="filter-modal-content">
                 <div className="filter-row">
                   <div className="filter-group">
-                    <label htmlFor="priority_support" className="filter-label">Priority Support</label>
+                    <label htmlFor="priority-support-filter" className="filter-label">
+                      Support Tier
+                    </label>
                     <select
-                      id="priority_support"
+                      id="priority-support-filter"
                       value={filters.priority_support}
-                      onChange={(e) => setFilters({ ...filters, priority_support: e.target.value })}
+                      onChange={(e) => setFilters(prev => ({ ...prev, priority_support: e.target.value }))}
                       className="filter-select"
                     >
                       <option value="">All</option>
-                      {getUniqueValues('priority_support').map(value => (
-                        <option key={value} value={value}>{value}</option>
-                      ))}
+                      <option value="Lite">Lite</option>
+                      <option value="Standard">Standard</option>
+                      <option value="Enterprise">Enterprise</option>
                     </select>
                   </div>
 
                   <div className="filter-group">
-                    <label htmlFor="resident_hosting" className="filter-label">Resident Hosting</label>
+                    <label htmlFor="resident-hosting-filter" className="filter-label">
+                      Resident
+                    </label>
                     <select
-                      id="resident_hosting"
+                      id="resident-hosting-filter"
                       value={filters.resident_hosting}
-                      onChange={(e) => setFilters({ ...filters, resident_hosting: e.target.value })}
+                      onChange={(e) => setFilters(prev => ({ ...prev, resident_hosting: e.target.value }))}
                       className="filter-select"
                     >
                       <option value="">All</option>
-                      {getUniqueValues('resident_hosting').map(value => (
-                        <option key={value} value={value}>{value}</option>
-                      ))}
+                      <option value="1">Yes</option>
+                      <option value="0">No</option>
                     </select>
                   </div>
 
                   <div className="filter-group">
-                    <label htmlFor="database_exists" className="filter-label">Database Exists</label>
+                    <label htmlFor="database_exists" className="filter-label">Backup</label>
                     <select
                       id="database_exists"
                       value={filters.database_exists}
@@ -256,7 +328,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
                   </div>
 
                   <div className="filter-group">
-                    <label htmlFor="itar_hosting_bc" className="filter-label">ITAR Hosting</label>
+                    <label htmlFor="itar_hosting_bc" className="filter-label">ITAR</label>
                     <select
                       id="itar_hosting_bc"
                       value={filters.itar_hosting_bc}
