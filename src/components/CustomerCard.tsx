@@ -206,28 +206,54 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     const testEnvironment = item.test_environment;
     const isResidentHosting = Boolean(item.resident_hosting);
     
-    if (!testEnvironment || testEnvironment === '0' || testEnvironment === 0 || isResidentHosting) {
-      return null;
+    // For non-resident hosting: show only if test_environment is truthy (not "0")
+    if (!isResidentHosting) {
+      if (!testEnvironment || testEnvironment === '0' || testEnvironment === 0) {
+        return null;
+      }
     }
-
-    // Determine the test URL based on domain format
-    let testUrl;
-    if (domain.includes('.')) {
-      // Domain contains a period - use the domain as-is with _test suffix
-      testUrl = `https://${domain}_test.cetecerp.com/auth/login?username=techx&password=REMOVED`;
-    } else {
-      // Domain doesn't contain a period - append _test.cetecerp.com
-      testUrl = `https://${domain}_test.cetecerp.com/auth/login?username=techx&password=REMOVED`;
-    }
+    // For resident hosting: show regardless of test_environment value
+    // (but will be disabled if domain contains a period)
 
     // Determine button text based on test environment value
     let buttonText = 'Test ↗';
-    if (testEnvironment === 'Update Nightly') {
-      buttonText = 'Test (nightly) ↗';
-    } else if (testEnvironment === 'Pause Updates') {
-      buttonText = 'Test (paused) ↗';
-    } else if (testEnvironment === 'Update Weekly') {
-      buttonText = 'Test (weekly) ↗';
+    if (testEnvironment && testEnvironment !== '0' && testEnvironment !== 0) {
+      if (testEnvironment === 'Update Nightly') {
+        buttonText = 'Test (nightly) ↗';
+      } else if (testEnvironment === 'Pause Updates') {
+        buttonText = 'Test (paused) ↗';
+      } else if (testEnvironment === 'Update Weekly') {
+        buttonText = 'Test (weekly) ↗';
+      }
+    }
+
+    // For resident hosting with domain containing a period: disabled button
+    if (isResidentHosting && domain.includes('.')) {
+      return (
+        <button
+          className="test-button disabled"
+          disabled
+          title="Test environment not available for this domain format"
+        >
+          {buttonText}
+        </button>
+      );
+    }
+
+    // Determine the test URL
+    let testUrl;
+    if (isResidentHosting) {
+      // Resident hosting without period: cetecerp-beta.{domain}.com
+      testUrl = `https://cetecerp-beta.${domain}.com/auth/login?username=techx&password=REMOVED`;
+    } else {
+      // Non-resident hosting: domain_test.cetecerp.com
+      if (domain.includes('.')) {
+        // Domain contains a period - use the domain as-is with _test suffix
+        testUrl = `https://${domain}_test.cetecerp.com/auth/login?username=techx&password=REMOVED`;
+      } else {
+        // Domain doesn't contain a period - append _test.cetecerp.com
+        testUrl = `https://${domain}_test.cetecerp.com/auth/login?username=techx&password=REMOVED`;
+      }
     }
     
     return (

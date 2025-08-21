@@ -1287,6 +1287,18 @@ body {
   transform: translateY(-1px);
 }
 
+.test-button.disabled {
+  background: #6c757d;
+  color: #adb5bd;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.test-button.disabled:hover {
+  background: #6c757d;
+  transform: none;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .card-header {
