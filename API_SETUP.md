@@ -1,75 +1,277 @@
-# CETEC ERP API Setup Guide
+# CETEC ERP API Integration Guide
 
-This guide explains how to set up and use the CETEC ERP API integration in your React application.
+This guide explains how the CETEC ERP API integration works in the CETEC Backup Puller application, including the backend proxy architecture and enhanced functionality.
 
-## Environment Configuration
+## 🏗️ Architecture Overview
 
-1. Create a `.env.local` file in your project root (this file is automatically ignored by git):
+The application uses a **backend proxy architecture** where:
+
+1. **Frontend** → Makes requests to local backend server
+2. **Backend** → Proxies requests to CETEC ERP API with MySQL enrichment
+3. **MySQL Integration** → Automatically checks database existence for each customer
+4. **Enhanced Response** → Returns enriched data with backup status and timestamps
+
+## 🔧 Environment Configuration
+
+### 1. Create Environment File
+
+Create a `.env` file in your project root:
 
 ```bash
 # CETEC ERP API Configuration
+API_URL=https://yourdomain.cetecerp.com
+
+# Frontend Configuration (Vite will use these)
 VITE_CETEC_DOMAIN=yourdomain.cetecerp.com
 VITE_PRESHARED_TOKEN=your_actual_token_here
-VITE_API_PROTOCOL=http
+VITE_API_PROTOCOL=https
+
+# MySQL Database Configuration
+MYSQL_HOST=your_mysql_host
+MYSQL_USER=your_mysql_username
+MYSQL_PASSWORD=your_mysql_password
+MYSQL_PORT=3306
 ```
 
-2. Replace the placeholder values:
-   - `yourdomain.cetecerp.com` with your actual CETEC ERP domain
-   - `your_actual_token_here` with your actual preshared token
-   - `http` with your preferred protocol (http or https)
+### 2. Replace Placeholder Values
 
-## API Endpoint Format
+- `yourdomain.cetecerp.com` → Your actual CETEC ERP domain
+- `your_actual_token_here` → Your actual preshared token
+- `https` → Your preferred protocol (http or https)
+- MySQL credentials → Your database connection details
 
-The API call follows this format:
+## 🌐 API Endpoints
+
+### Frontend → Backend (Local)
+
+The frontend makes requests to your local backend server:
+
+```typescript
+// Frontend code
+const response = await axios.get(
+  `http://localhost:3001/api/cetec/customer?preshared_token=${token}`
+);
 ```
-GET https://{DOMAIN}.cetecerp.com/api/customer?id={ID}&name={NAME}&external_key={KEY}&columns={COLUMNS}&preshared_token={TOKEN}
-```
 
-This matches your curl example:
+### Backend → CETEC ERP API
+
+The backend then proxies to the actual CETEC ERP API:
+
 ```bash
-curl --request GET \
-  --url 'https://YOURDOMAIN.cetecerp.com/api/customer?id=SOME_INTEGER_VALUE&name=SOME_STRING_VALUE&external_key=SOME_STRING_VALUE&columns=SOME_STRING_VALUE&preshared_token=SOME_STRING_VALUE'
+GET https://{DOMAIN}.cetecerp.com/api/customer?{PARAMETERS}&preshared_token={TOKEN}
 ```
 
-**Query Parameters:**
-- `id` (optional): Customer ID as integer
-- `name` (optional): Customer name as string
-- `external_key` (optional): External key as string
-- `columns` (optional): Specific columns to return as string
-- `preshared_token` (required): Authentication token
+## 📊 Enhanced Data Response
 
-## How It Works
+### What You Get
 
-1. **Configuration**: The `src/config.ts` file reads environment variables and provides helper functions
-2. **API Call**: The React component uses axios to make HTTP requests to the CETEC ERP API
-3. **Authentication**: Uses the preshared token as a query parameter (not in headers)
-4. **Data Display**: Shows the API response in a formatted JSON view
+Instead of raw CETEC API data, you receive enriched information:
 
-## Security Notes
+```json
+{
+  "customers": [
+    {
+      "id": 123,
+      "name": "Customer Name",
+      "domain": "customer.com",
+      "database_exists": true,
+      "ok_to_bill": 1,
+      "priority_support": "Enterprise",
+      "resident_hosting": false,
+      "test_environment": "Update Nightly",
+      "itar_hosting_bc": false,
+      "num_prod_users": 150,
+      "num_full_users": 25,
+      "techx_password": "encrypted_password",
+      "lastPulled": "2025-01-13T10:30:00.000Z"
+    }
+  ],
+  "metadata": {
+    "total_customers": 344,
+    "mysql_status": "completed",
+    "mysql_enabled": true,
+    "timestamp": "2025-01-13T10:30:00.000Z",
+    "summary": {
+      "total_customers": 344,
+      "existing_databases": 298,
+      "resident_hosting": 23,
+      "itar_hosting": 12,
+      "invalid_domains": 0,
+      "no_database": 11
+    }
+  }
+}
+```
 
-- Never commit your `.env.local` file to version control
-- The preshared token is sent as a query parameter (ensure HTTPS is used)
-- Consider implementing additional security measures for production use
+### Enhanced Fields
 
-## Testing
+- **`database_exists`**: Boolean indicating if backup database exists
+- **`lastPulled`**: Timestamp of last backup pull (if any)
+- **`mysql_status`**: Status of MySQL enrichment process
+- **`summary`**: Statistical overview of customer data
 
-1. Start your development server: `npm run dev`
-2. Open the app in your browser
-3. Enter a customer ID and click "Fetch Customer Data"
-4. Check the browser console for configuration logs
-5. Verify the API response is displayed correctly
+## 🔍 Query Parameters
 
-## Troubleshooting
+### Available Parameters
 
-- **CORS Issues**: Ensure your CETEC ERP server allows requests from your domain
-- **Authentication Errors**: Verify your preshared token is correct
-- **Network Errors**: Check if the domain is accessible from your network
-- **Environment Variables**: Ensure variables are prefixed with `VITE_` for Vite to recognize them
+- **`preshared_token`** (required): Authentication token
+- **`id`** (optional): Filter by customer ID
+- **`name`** (optional): Filter by customer name
+- **`external_key`** (optional): Filter by external key
+- **`columns`** (optional): Specific columns to return
 
-## Production Considerations
+### Default Columns
 
-- Remove console.log statements from config.ts
-- Implement proper error handling and user feedback
-- Add loading states and retry mechanisms
-- Consider implementing request caching
-- Add rate limiting if needed
+If no columns specified, the backend automatically requests:
+
+```bash
+id,name,domain,ok_to_bill,priority_support,resident_hosting,test_environment,itar_hosting_bc,num_prod_users,num_full_users,techx_password
+```
+
+## 🗄️ MySQL Integration
+
+### Automatic Database Checks
+
+The backend automatically:
+
+1. **Fetches** customer data from CETEC API
+2. **Filters** for billing-enabled customers (`ok_to_bill = 1`)
+3. **Checks** MySQL for database existence
+4. **Validates** `usage_stats` table presence
+5. **Enriches** response with database status
+
+### Database Status Values
+
+- **`true`**: Database exists with `usage_stats` table
+- **`false`**: Database doesn't exist
+- **`resident_hosting`**: Customer uses resident hosting
+- **`itar_hosting`**: Customer uses ITAR hosting
+- **`unavailable`**: ITAR or resident hosting without database mapping
+- **`mysql_error`**: MySQL connection failed
+- **`batch_timeout`**: Database check timed out
+
+## 🔐 Security Features
+
+### Authentication
+
+- **Preshared Token**: Required for all API requests
+- **Backend Proxy**: Token never exposed to frontend
+- **HTTPS Support**: Secure communication with CETEC API
+
+### Data Protection
+
+- **MySQL Credentials**: Only accessible on backend
+- **Customer Data**: Filtered by billing status
+- **Error Handling**: Sensitive information not exposed in errors
+
+## 🚀 Usage Examples
+
+### 1. Fetch All Customers
+
+```typescript
+const response = await axios.get(
+  'http://localhost:3001/api/cetec/customer',
+  {
+    params: {
+      preshared_token: 'your_token_here'
+    }
+  }
+);
+```
+
+### 2. Filter by Customer Name
+
+```typescript
+const response = await axios.get(
+  'http://localhost:3001/api/cetec/customer',
+  {
+    params: {
+      preshared_token: 'your_token_here',
+      name: 'Acme Corp'
+    }
+  }
+);
+```
+
+### 3. Get Specific Columns
+
+```typescript
+const response = await axios.get(
+  'http://localhost:3001/api/cetec/customer',
+  {
+    params: {
+      preshared_token: 'your_token_here',
+      columns: 'id,name,domain,priority_support'
+    }
+  }
+);
+```
+
+## 🧪 Testing
+
+### 1. Start the Application
+
+```bash
+npm run dev:full
+```
+
+### 2. Test API Endpoint
+
+```bash
+curl "http://localhost:3001/api/cetec/customer?preshared_token=YOUR_TOKEN"
+```
+
+### 3. Check MySQL Connection
+
+```bash
+curl "http://localhost:3001/api/test-mysql"
+```
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+1. **CORS Errors**
+   - Ensure backend is running on port 3001
+   - Check that frontend makes requests to `http://localhost:3001`
+
+2. **Authentication Errors**
+   - Verify preshared token is correct
+   - Check token has necessary permissions
+
+3. **MySQL Connection Issues**
+   - Verify MySQL credentials in `.env`
+   - Check MySQL server accessibility
+   - See [ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md) for details
+
+4. **Environment Variables**
+   - Restart server after updating `.env`
+   - Ensure variables are properly formatted
+
+### Debug Information
+
+The backend provides detailed error information:
+
+```json
+{
+  "status": "error",
+  "message": "MySQL connection failed",
+  "environment": "development",
+  "connection_method": "direct_host",
+  "connection_type": "tcp"
+}
+```
+
+## 🔄 Production Considerations
+
+- **Environment Variables**: Use production values
+- **MySQL Connection**: Ensure reliable database access
+- **Error Handling**: Monitor logs for issues
+- **Performance**: Consider connection pooling for high traffic
+- **Security**: Use HTTPS in production
+
+## 📚 Related Documentation
+
+- [Environment Setup](./ENVIRONMENT_SETUP.md) - MySQL configuration
+- [Running Both Servers](./RUNNING_BOTH_SERVERS.md) - Server management
+- [README.md](./README.md) - Main application documentation

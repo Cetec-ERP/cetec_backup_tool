@@ -14,7 +14,6 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   hiddenDevelButtons, 
   onActionClick 
 }) => {
-  // Check if a domain has a resident database mapping
   const hasResidentDatabase = (domain: string): boolean => {
     if (!residentDBsConfig || !domain) {
       return false;
@@ -26,18 +25,15 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     return hasDB;
   };
 
-  // Check if customer is unavailable for backups
   const isUnavailableForBackups = (): boolean => {
     const isItarHosting = Boolean(item.itar_hosting_bc);
     const isResidentHosting = Boolean(item.resident_hosting);
     const domain = item.domain;
     
-    // First condition: ITAR hosting customers
     if (isItarHosting) {
       return true;
     }
     
-    // Second condition: Resident hosting customers without database mapping
     if (isResidentHosting && domain) {
       return !hasResidentDatabase(domain);
     }
@@ -45,11 +41,9 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     return false;
   };
 
-  // Normalize priority support values to only valid options
   const normalizePrioritySupport = (value: string): string => {
     const normalizedValue = value.toLowerCase().trim();
     
-    // Map valid values
     if (normalizedValue === 'lite' || normalizedValue === 'l') {
       return 'Lite';
     } else if (normalizedValue === 'standard' || normalizedValue === 'std' || normalizedValue === 's') {
@@ -58,7 +52,6 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       return 'Enterprise';
     }
     
-    // Return 'false' for any invalid values
     return 'false';
   };
 
@@ -102,12 +95,10 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   };
 
   const renderActions = () => {
-    // Check if customer is unavailable for backups
     if (isUnavailableForBackups()) {
       return null;
     }
     
-    // If database exists and has been pulled before, show refresh button
     if (item.database_exists === true && item.lastPulled) {
       return (
         <button 
@@ -116,16 +107,15 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           title="Re-pull backup"
         >
           <svg className="refresh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9 0 0 1 6.74 2.74L21 8"/>
             <path d="M21 3v5h-5"/>
-            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9 0 0 1-6.74-2.74L3 16"/>
             <path d="M3 21v-5h5"/>
           </svg>
         </button>
       );
     }
     
-    // Otherwise show Pull Backup button
     return (
       <button 
         className="action-button primary"
@@ -175,20 +165,16 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       return null;
     }
 
-    // Determine the production URL based on domain format and hosting type
     let productionUrl;
     const isResidentHosting = Boolean(item.resident_hosting);
     
     if (isResidentHosting) {
         if (domain.includes('.')) {
-            // Domain contains a period - use the domain as-is
             productionUrl = `https://${domain}/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
         } else {
-            // Resident hosting: use cetecerp.{domain}.com format
             productionUrl = `https://cetecerp.${domain}.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
         }
     } else {
-        // Non-resident hosting: use existing logic
         productionUrl = `https://${domain}.cetecerp.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
     }
     
@@ -209,20 +195,15 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       return null;
     }
 
-    // Check if customer has truthy test_environment (but not "0") and falsy resident_hosting
     const testEnvironment = item.test_environment;
     const isResidentHosting = Boolean(item.resident_hosting);
     
-    // For non-resident hosting: show only if test_environment is truthy (not "0")
     if (!isResidentHosting) {
       if (!testEnvironment || testEnvironment === '0' || testEnvironment === 0) {
         return null;
       }
     }
-    // For resident hosting: show regardless of test_environment value
-    // (but will be disabled if domain contains a period)
 
-    // Determine button text based on test environment value
     let buttonText = 'Test ↗';
     if (testEnvironment && testEnvironment !== '0' && testEnvironment !== 0) {
       if (testEnvironment === 'Update Nightly') {
@@ -234,7 +215,6 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       }
     }
 
-    // For resident hosting with domain containing a period: disabled button
     if (isResidentHosting && domain.includes('.')) {
       return (
         <button
@@ -247,18 +227,10 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       );
     }
 
-    // Determine the test URL
     let testUrl;
     if (isResidentHosting) {
-      // Resident hosting without period: cetecerp-beta.{domain}.com
       testUrl = `https://cetecerp-beta.${domain}.com/auth/login?username=techx&password=REMOVED`;
     } else {
-      // Non-resident hosting: domain_test.cetecerp.com
-      if (domain.includes('.')) {
-        // Domain contains a period - use the domain as-is with _test suffix
-        testUrl = `https://${domain}_test.cetecerp.com/auth/login?username=techx&password=REMOVED`;
-      } else {
-        // Domain doesn't contain a period - append _test.cetecerp.com
         testUrl = `https://${domain}_test.cetecerp.com/auth/login?username=techx&password=REMOVED`;
       }
     }

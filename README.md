@@ -1,69 +1,203 @@
-# React + TypeScript + Vite
+# CETEC Backup Puller
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A comprehensive internal tool for managing customer backups, database verification, and environment access for CETEC ERP customers.
 
-Currently, two official plugins are available:
+## 🚀 Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+**New to the application?** Start with our [Quick Start Guide](./QUICK_START.md) to get up and running in under 10 minutes!
 
-## Expanding the ESLint configuration
+## ✨ Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Customer Management**: View and filter customers with billing status verification
+- **Database Verification**: Automatic MySQL database existence checks with `usage_stats` table validation
+- **Environment Access**: Direct links to Production, Development, and Test environments
+- **Backup Management**: Pull backup functionality with timestamp tracking
+- **Advanced Filtering**: Search and filter by support tier, hosting type, backup status, and more
+- **Resident Hosting Support**: Special handling for customers with custom database mappings
+- **ITAR Compliance**: Support for ITAR hosting customers with appropriate access controls
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🏗️ Architecture
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+- **Frontend**: React + TypeScript + Vite with modern UI components
+- **Backend**: Node.js + Express server with MySQL integration
+- **Database**: MySQL with automatic connection optimization (Cloud SQL Proxy support)
+- **API**: CETEC ERP API integration with backend proxy for enhanced functionality
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 📋 Prerequisites
+
+- Node.js 18+ and npm
+- MySQL server access (or Google Cloud SQL)
+- CETEC ERP API credentials
+- Git
+
+## 🛠️ Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd cetec_backup_puller
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment**:
+   ```bash
+   cp server.env.example .env
+   # Edit .env with your actual values
+   ```
+
+4. **Start development servers**:
+   ```bash
+   npm run dev:full
+   ```
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+Create a `.env` file in your project root:
+
+```bash
+# Server Configuration
+PORT=3001
+
+# CETEC API Configuration
+API_URL=https://yourdomain.cetecerp.com
+
+# Frontend Configuration
+VITE_CETEC_DOMAIN=yourdomain.cetecerp.com
+VITE_PRESHARED_TOKEN=your_preshared_token_here
+VITE_API_PROTOCOL=https
+
+# MySQL Database Configuration
+MYSQL_HOST=your_mysql_host
+MYSQL_USER=your_mysql_username
+MYSQL_PASSWORD=your_mysql_password
+MYSQL_PORT=3306
+
+# Optional: Cloud SQL Proxy (for development)
+MYSQL_SOCKET=/tmp/cloudsql/your-project:your-region:your-instance
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### MySQL Setup
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+The application automatically checks for database existence and `usage_stats` table presence. See [ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md) for detailed MySQL configuration.
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Cloud SQL Proxy (Optional)
+
+For development environments, you can use Google Cloud SQL Proxy for faster connections. See [CLOUD_SQL_PROXY_SETUP.md](./CLOUD_SQL_PROXY_SETUP.md) for setup instructions.
+
+## 🚀 Usage
+
+### Starting the Application
+
+```bash
+# Start both frontend and backend
+npm run dev:full
+
+# Start only frontend
+npm run dev
+
+# Start only backend
+npm run server
+
+# Use custom process manager (most reliable)
+npm run dev:custom
 ```
+
+### Application Features
+
+1. **Customer Dashboard**: View all customers with automatic data loading
+2. **Search & Filter**: Find customers by name, domain, or various criteria
+3. **Database Status**: See which customers have backup databases available
+4. **Environment Access**: Quick access to Production, Development, and Test environments
+5. **Backup Operations**: Pull backups with automatic timestamp tracking
+
+### API Endpoints
+
+- `GET /api/cetec/customer` - Fetch customer data with MySQL enrichment
+- `POST /api/pull/record` - Record backup pull timestamps
+- `POST /api/backup/request` - Request backup operations
+- `POST /api/mysql/check` - Check specific customer database status
+- `GET /api/test-mysql` - Test MySQL connection
+
+## 🔧 Development
+
+### Project Structure
+
+```
+cetec_backup_puller/
+├── src/
+│   ├── components/          # React components
+│   │   ├── CustomerCard.tsx # Individual customer display
+│   │   ├── DataTable.tsx    # Customer list container
+│   │   └── SearchAndFilter.tsx # Search and filtering UI
+│   ├── config/              # Configuration files
+│   │   └── resident-dbs.json # Resident hosting database mappings
+│   ├── App.tsx              # Main application component
+│   └── main.tsx             # Application entry point
+├── server.js                # Express backend server
+├── start-dev.js             # Development process manager
+└── package.json             # Dependencies and scripts
+```
+
+### Available Scripts
+
+- `npm run dev` - Start frontend development server
+- `npm run server` - Start backend server
+- `npm run dev:full` - Start both servers with concurrently
+- `npm run dev:custom` - Start both servers with custom process manager
+- `npm run build` - Build for production
+- `npm run lint` - Run ESLint
+- `npm run kill:ports` - Kill processes on ports 3001 and 5173
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+1. **Port Conflicts**: Use `npm run kill:ports` to clear occupied ports
+2. **MySQL Connection**: Verify credentials and network access
+3. **CORS Errors**: Ensure backend is running on port 3001
+4. **Environment Variables**: Restart server after updating `.env`
+
+### Server Status Check
+
+```bash
+# Check if servers are running
+lsof -i :3001  # Backend
+lsof -i :5173  # Frontend
+```
+
+## 📚 Documentation
+
+### Getting Started
+- **[Quick Start Guide](./QUICK_START.md)** - Get up and running in 10 minutes
+- **[Environment Setup](./ENVIRONMENT_SETUP.md)** - MySQL and environment configuration
+- **[Cloud SQL Proxy Setup](./CLOUD_SQL_PROXY_SETUP.md)** - Google Cloud SQL Proxy configuration
+
+### Advanced Topics
+- **[API Setup](./API_SETUP.md)** - CETEC API integration details
+- **[Running Both Servers](./RUNNING_BOTH_SERVERS.md)** - Development server management
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is for internal use by CETEC ERP team members.
+
+## 🆘 Support
+
+For issues or questions:
+1. Check the [Quick Start Guide](./QUICK_START.md) for common solutions
+2. Review the troubleshooting section above
+3. Check server logs for error details
+4. Contact the development team
