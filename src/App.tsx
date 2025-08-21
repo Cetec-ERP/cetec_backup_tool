@@ -8,7 +8,7 @@ import './App.css';
 function App() {
   const [data, setData] = useState<any[]>([]);
   const [filteredData, setFilteredData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true); // Start with loading true since we fetch automatically
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const startBackupProcess = async () => {
@@ -16,15 +16,12 @@ function App() {
     setError(null);
     
     try {
-      // Choose endpoint based on MySQL preference
-      const endpoint = 'api/cetec/customer'; // Always use the full endpoint for MySQL checking
+      const endpoint = 'api/cetec/customer';
       const url = `http://localhost:3001/${endpoint}?preshared_token=${config.presharedToken}`;
       
-      const response = await axios.get(url, { timeout: 60000 }); // Increased timeout for MySQL operations
+      const response = await axios.get(url, { timeout: 60000 });
       
-      // Handle the new enriched data structure
       if (response.data && response.data.customers) {
-        // Sort customers alphabetically by name before setting state
         const sortedCustomers = response.data.customers.sort((a: any, b: any) => {
           const nameA = (a.name || '').toLowerCase();
           const nameB = (b.name || '').toLowerCase();
@@ -32,21 +29,16 @@ function App() {
         });
         
         setData(sortedCustomers);
-        setFilteredData(sortedCustomers); // Initialize filtered data
-        if (response.data.metadata) {
-          // console.log('Processing metadata:', response.data.metadata); // Removed console.log
-        }
+        setFilteredData(sortedCustomers);
       } else {
-        // Sort customers alphabetically by name before setting state (fallback for old data structure)
         const sortedCustomers = response.data.sort((a: any, b: any) => {
           const nameA = (a.name || '').toLowerCase();
           const nameB = (b.name || '').toLowerCase();
           return nameA.localeCompare(nameB);
         });
         
-        setData(sortedCustomers); // Fallback for old data structure
-        setFilteredData(sortedCustomers); // Initialize filtered data
-        // console.log('Received data in legacy format'); // Removed console.log
+        setData(sortedCustomers);
+        setFilteredData(sortedCustomers);
       }
       
       setLoading(false);
@@ -55,7 +47,6 @@ function App() {
       
       let errorMessage = err.message || 'An error occurred during backup';
       
-      // Provide more helpful error messages for common issues
       if (err.code === 'ECONNABORTED') {
         errorMessage = 'Request timed out. Please check your nework connection and try again.';
       } else if (err.response?.status === 500) {
@@ -69,10 +60,9 @@ function App() {
     }
   };
 
-  // Automatically fetch data when component mounts
   useEffect(() => {
     startBackupProcess();
-  }, []); // Empty dependency array means this runs once when component mounts
+  }, []);
 
   const handleSubmit = () => {
     startBackupProcess();
@@ -107,19 +97,12 @@ function App() {
   };
 
   const handleDatabaseStatusUpdate = (customerId: string, databaseExists: any) => {
-    console.log('=== DATABASE STATUS UPDATE CALLED ===');
-    console.log('Customer ID:', customerId);
-    console.log('Database exists value:', databaseExists);
-    console.log('Current data length:', data.length);
-    console.log('Current filteredData length:', filteredData.length);
-    
     setData(prevData => {
       const updatedData = prevData.map(customer => 
         customer.id === customerId 
           ? { ...customer, database_exists: databaseExists }
           : customer
       );
-      console.log('Updated data for customer:', customerId, 'New database_exists:', databaseExists);
       return updatedData;
     });
     
@@ -129,7 +112,6 @@ function App() {
           ? { ...customer, database_exists: databaseExists }
           : customer
       );
-      console.log('Updated filteredData for customer:', customerId, 'New database_exists:', databaseExists);
       return updatedFilteredData;
     });
   };
@@ -137,7 +119,6 @@ function App() {
   return (
     <div className="app-container">
       <h1 className="app-header">
-        {/* Cetec ERP Internal Backup Tool */}
         Backups
       </h1>
       
@@ -160,9 +141,7 @@ function App() {
 
       {!loading && !error && data && (
         <>
-          {/* Combined Search, Filter, and Summary Section */}
           <div className="combined-header-section">
-            {/* Search and Filter */}
             <div className="search-filter-row">
               <SearchAndFilter 
                 data={data} 
@@ -180,14 +159,12 @@ function App() {
               </div>
             </div>
             
-            {/* Summary Statistics */}
             <div className="summary-container">
               <div className="summary-stats">
                 <div className="summary-item">
                   <span className="summary-label">Total:</span>
                   <span className="summary-value">{filteredData.length}</span>
                 </div>
-                {/* MySQL specific summary items */}
                 <div className="summary-item">
                   <span className="summary-label">Has Backup:</span>
                   <span className="summary-value success">
@@ -205,11 +182,6 @@ function App() {
                   <span className="summary-value danger">
                     {filteredData.filter((customer: any) => {
                       const itarValue = customer.itar_hosting_bc;
-                      // Debug: log ITAR values to understand the data structure
-                      if (itarValue && itarValue !== '' && itarValue !== 'false' && itarValue !== 0) {
-                        console.log('ITAR customer found:', customer.name, 'itar_hosting_bc:', itarValue);
-                      }
-                      // Check for various ITAR values: boolean true/1, string "ITAR", etc.
                       return itarValue === true || itarValue === 1 || 
                              (typeof itarValue === 'string' && itarValue.toLowerCase().includes('itar')) ||
                              (itarValue && itarValue !== '' && itarValue !== 'false' && itarValue !== 0);

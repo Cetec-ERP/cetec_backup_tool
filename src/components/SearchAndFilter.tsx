@@ -19,7 +19,6 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
   const modalRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Close modal when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
@@ -36,7 +35,6 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
     };
   }, [showFilters]);
 
-  // Position modal within viewport bounds
   useEffect(() => {
     if (showFilters && modalRef.current && buttonRef.current) {
       const modal = modalRef.current;
@@ -44,26 +42,20 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
       const buttonRect = button.getBoundingClientRect();
       const modalRect = modal.getBoundingClientRect();
       
-      // Reset any previous positioning
       modal.style.right = '';
       modal.style.left = '';
       
-      // Default: position to the right of the button
       modal.style.left = '0';
       
-      // Check if modal extends beyond right edge of viewport
       if (buttonRect.left + modalRect.width > window.innerWidth) {
-        // Position to the left of the button if it would go off-screen to the right
         modal.style.left = 'auto';
         modal.style.right = '0';
       }
     }
   }, [showFilters]);
 
-  // Get unique values for each filterable column
   const getUniqueValues = (column: string) => {
     if (column === 'priority_support') {
-      // Return priority support values in specific order
       return ['Lite', 'Standard', 'Enterprise'];
     }
     
@@ -72,16 +64,12 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
       if (item[column] !== undefined && item[column] !== null && item[column] !== '') {
         let value = String(item[column]);
         
-        // Normalize priority_support values
         if (column === 'priority_support') {
           value = normalizePrioritySupport(value);
-          // Only add valid priority support values
           if (value !== 'false') {
             values.add(value);
           }
         } else if (column === 'test_environment') {
-          // For test_environment, exclude falsy values (including "0") from dynamic options
-          // These will be handled by the "No" filter instead
           if (value && value !== '0' && value !== 'false') {
             values.add(value);
           }
@@ -93,11 +81,9 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
     return Array.from(values).sort();
   };
 
-  // Normalize priority support values to only valid options
   const normalizePrioritySupport = (value: string): string => {
     const normalizedValue = value.toLowerCase().trim();
     
-    // Map valid values
     if (normalizedValue === 'lite' || normalizedValue === 'l') {
       return 'Lite';
     } else if (normalizedValue === 'standard' || normalizedValue === 'std' || normalizedValue === 's') {
@@ -106,11 +92,9 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
       return 'Enterprise';
     }
     
-    // Return 'false' for any invalid values
     return 'false';
   };
 
-  // Check if a domain has a resident database mapping
   const hasResidentDatabase = (domain: string): boolean => {
     if (!residentDBsConfig || !domain) {
       return false;
@@ -122,11 +106,9 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
     return hasDB;
   };
 
-  // Apply filters and search
   useEffect(() => {
     let filteredData = [...data];
 
-    // Apply text search (customer name and domain)
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       filteredData = filteredData.filter(item => {
@@ -136,83 +118,64 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
       });
     }
 
-    // Apply column filters
     Object.entries(filters).forEach(([column, value]) => {
       if (value && value !== '') {
         filteredData = filteredData.filter(item => {
           if (column === 'priority_support') {
-            // Normalize the item's priority support value for comparison
             const normalizedItemValue = normalizePrioritySupport(String(item[column] || ''));
             return normalizedItemValue === value;
           } else if (column === 'resident_hosting') {
-            // Handle resident_hosting specifically - convert both values to numbers for comparison
             const filterValue = parseInt(value);
             const itemValue = item[column];
             
             if (filterValue === 1) {
-              // Filter for "Yes" - show items with resident_hosting === 1 or === true
               return itemValue === 1 || itemValue === true;
             } else if (filterValue === 0) {
-              // Filter for "No" - show items with resident_hosting !== 1 and !== true
               return itemValue !== 1 && itemValue !== true;
             }
             return true;
           } else if (column === 'database_exists') {
-            // Handle database_exists specifically - distinguish between different statuses
             const itemValue = item[column];
             
             if (value === 'true') {
-              // Filter for "Yes" - show items with database_exists === true
               return itemValue === true;
             } else if (value === 'false') {
-              // Filter for "No" - show items with database_exists === false (no backup available)
               return itemValue === false;
             } else if (value === 'unavailable') {
-              // Filter for "Unavailable" - show items that are ITAR or resident hosting without database mapping
               const isItarHosting = Boolean(item.itar_hosting_bc);
               const isResidentHosting = Boolean(item.resident_hosting);
               const domain = item.domain;
               
-              // First condition: ITAR hosting customers
               if (isItarHosting) {
                 return true;
               }
               
-              // Second condition: Resident hosting customers without database mapping
               if (isResidentHosting && domain) {
                 return !hasResidentDatabase(domain);
               }
               
               return false;
             } else if (value === 'resident_hosting') {
-              // Filter for "Resident Hosting" - show items with database_exists === 'resident_hosting'
               return itemValue === 'resident_hosting';
             } else if (value === 'itar_hosting') {
-              // Filter for "ITAR Hosting" - show items with database_exists === 'itar_hosting'
               return itemValue === 'itar_hosting';
             }
             return true;
           } else if (column === 'itar_hosting_bc') {
-            // Handle itar_hosting_bc specifically - convert both values to booleans for comparison
             const filterValue = value === 'true';
             const itemValue = item[column];
             
             if (filterValue === true) {
-              // Filter for "Yes" - show items with truthy itar_hosting_bc values
               return Boolean(itemValue);
             } else if (filterValue === false) {
-              // Filter for "No" - show items with falsy itar_hosting_bc values
               return !Boolean(itemValue);
             }
             return true;
           } else if (column === 'test_environment') {
-            // Handle test_environment specifically - handle "false" specially for all falsy values
             if (value === 'false') {
-              // Filter for "No" - show items with falsy test_environment values
               const itemValue = item[column];
               return !itemValue || itemValue === 0 || itemValue === '0' || itemValue === false || itemValue === null || itemValue === undefined || itemValue === '';
             } else {
-              // For other values, use exact match (including dynamic truthy values)
               return String(item[column] || '') === value;
             }
           } else {
@@ -241,7 +204,6 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
 
   return (
     <div className="search-filter-container">
-      {/* Search Section - Always Visible */}
       <div className="search-section">
         <div className="search-input-group">
           <input
@@ -264,7 +226,6 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
             {showFilters ? 'Hide Filters' : 'Filters'}
           </button>
           
-          {/* Floating Filter Modal */}
           {showFilters && (
             <div className="filter-modal">
               <div className="filter-modal-header">

@@ -1,6 +1,6 @@
 # Running Both Frontend and Backend Servers
 
-This guide explains how to run both the React frontend and Node.js backend servers simultaneously.
+This guide explains how to run both the React frontend and Node.js backend servers simultaneously for the CETEC Backup Puller application.
 
 ## 🚀 **Quick Start**
 
@@ -40,24 +40,42 @@ npm run dev
 npm run server
 ```
 - Runs on: http://localhost:3001
-- CETEC API proxy
-- MySQL database integration
+- CETEC API proxy with MySQL integration
+- Customer data enrichment and backup management
 
 ## 🌐 **API Endpoints**
 
-### **Backend API Endpoint**
-- **URL**: `/api/cetec/customer`
-- **Method**: GET
+### **Backend API Endpoints**
+
+#### **Customer Data**
+- **URL**: `GET /api/cetec/customer`
+- **Purpose**: Fetch customer data with MySQL database verification
 - **Query Parameters**:
   - `preshared_token` (required): Your CETEC API token
   - `id` (optional): Customer ID filter
   - `name` (optional): Customer name filter
   - `external_key` (optional): External key filter
   - `columns` (optional): Specific columns to return
-  - `filter_billing` (optional): Set to 'true' to filter by ok_to_bill status
+
+#### **Backup Operations**
+- **URL**: `POST /api/pull/record`
+- **Purpose**: Record backup pull timestamps
+- **Body**: `{ "customerId": "123" }`
+
+- **URL**: `POST /api/backup/request`
+- **Purpose**: Request backup operations
+- **Body**: `{ "dbname": "database_name" }`
+
+#### **Database Management**
+- **URL**: `POST /api/mysql/check`
+- **Purpose**: Check specific customer database status
+- **Body**: `{ "customerId": "123", "domain": "example.com", "residentHosting": false, "itarHosting": false }`
+
+- **URL**: `GET /api/test-mysql`
+- **Purpose**: Test MySQL connection and configuration
 
 ### **Response Format**
-The backend now returns enriched data with MySQL database verification:
+The backend returns enriched data with MySQL database verification:
 ```json
 {
   "customers": [
@@ -67,13 +85,35 @@ The backend now returns enriched data with MySQL database verification:
       "domain": "customer.com",
       "database_exists": true,
       "ok_to_bill": 1,
-      // ... other fields
+      "priority_support": "Enterprise",
+      "resident_hosting": false,
+      "test_environment": "Update Nightly",
+      "itar_hosting_bc": false,
+      "num_prod_users": 150,
+      "num_full_users": 25,
+      "techx_password": "encrypted_password",
+      "lastPulled": "2025-01-13T10:30:00.000Z"
     }
   ],
   "metadata": {
     "total_customers": 344,
+    "mysql_status": "completed",
     "mysql_enabled": true,
-    "timestamp": "2025-01-13T..."
+    "api_url": "https://yourdomain.cetecerp.com/api/customer?...",
+    "timestamp": "2025-01-13T10:30:00.000Z",
+    "summary": {
+      "total_customers": 344,
+      "existing_databases": 298,
+      "resident_hosting": 23,
+      "itar_hosting": 12,
+      "invalid_domains": 0,
+      "no_database": 11
+    },
+    "processing_steps": {
+      "api_fetch": "completed",
+      "billing_filter": "completed",
+      "mysql_enrichment": "completed"
+    }
   }
 }
 ```
@@ -96,12 +136,13 @@ VITE_PRESHARED_TOKEN=your_preshared_token_here
 VITE_API_PROTOCOL=https
 
 # MySQL Database Configuration
-# Note: We don't specify a database since we're checking for database existence
 MYSQL_HOST=your_mysql_host
 MYSQL_USER=your_mysql_username
 MYSQL_PASSWORD=your_mysql_password
-# MYSQL_DATABASE=not_needed (we're checking if databases exist, not connecting to one)
-MYSQL_PORT=3306  # Optional - MySQL default is 3306
+MYSQL_PORT=3306
+
+# Optional: Cloud SQL Proxy (for development)
+MYSQL_SOCKET=/tmp/cloudsql/your-project:your-region:your-instance
 ```
 
 ### **Important Notes**
@@ -112,17 +153,22 @@ MYSQL_PORT=3306  # Optional - MySQL default is 3306
 
 ## 🗄️ **MySQL Integration**
 
-The backend now automatically checks if a MySQL database exists for each customer's domain:
+The backend automatically checks if a MySQL database exists for each customer's domain:
 
-- **Query**: `SHOW DATABASES LIKE '[domain]'`
+- **Query**: Checks for `usage_stats` table in customer database
 - **Result**: Adds `database_exists` field to each customer record
 - **Error Handling**: Continues processing even if MySQL connection fails
-- **Performance**: Processes all customers sequentially (manageable for 344 records)
+- **Performance**: Processes customers in batches with individual timeouts
 
 ### **Database Existence Values**
-- `true`: Database exists
+- `true`: Database exists with `usage_stats` table
 - `false`: Database does not exist
-- `null`: MySQL error occurred (connection failed, etc.)
+- `resident_hosting`: Customer uses resident hosting with database mapping
+- `itar_hosting`: Customer uses ITAR hosting
+- `unavailable`: ITAR or resident hosting without database mapping
+- `mysql_error`: MySQL error occurred
+- `batch_timeout`: Database check timed out
+- `invalid_domain`: Customer has no valid domain
 
 ## 🚨 **Troubleshooting**
 
@@ -132,28 +178,57 @@ The backend now automatically checks if a MySQL database exists for each custome
    ```bash
    lsof -ti:3001 | xargs kill -9  # Kill process on port 3001
    lsof -ti:5173 | xargs kill -9  # Kill process on port 5173
+   
+   # Or use the provided script
+   npm run kill:ports
    ```
 
 2. **MySQL Connection Failed**
    - Check your `.env` file has correct MySQL credentials
    - Verify MySQL server is running and accessible
    - Check firewall/network settings
+   - See [ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md) for detailed MySQL setup
 
 3. **CORS Errors**
    - Ensure backend is running on port 3001
    - Check that frontend is making requests to `http://localhost:3001`
+   - Verify CORS headers are properly set
 
 4. **Environment Variables Not Loading**
    - Restart your server after updating `.env`
    - Verify `.env` file is in the project root
    - Check for syntax errors in `.env` file
+   - Ensure no spaces around `=` signs
+
+5. **CETEC API Connection Issues**
+   - Verify `API_URL` is correct and accessible
+   - Check `preshared_token` is valid
+   - Ensure network connectivity to CETEC domain
 
 ### **Server Status Check**
 ```bash
 # Check if servers are running
 lsof -i :3001  # Backend
 lsof -i :5173  # Frontend
+
+# Check server logs
+# Backend logs appear in the terminal where you ran npm run server
+# Frontend logs appear in the terminal where you ran npm run dev
 ```
+
+### **Debug Information**
+
+The backend provides detailed error information through the `/api/test-mysql` endpoint:
+
+```bash
+curl http://localhost:3001/api/test-mysql
+```
+
+This will show:
+- Connection method (socket vs direct host)
+- Environment detection
+- MySQL configuration details
+- Any connection errors
 
 ## 📝 **Development Workflow**
 
@@ -168,3 +243,31 @@ lsof -i :5173  # Frontend
 - **Frontend**: Automatically restarts on file changes
 - **Backend**: Restart manually after changes to `server.js` or `.env`
 - **Full Restart**: Stop both with `Ctrl+C`, then run `npm run dev:full` again
+
+## 🚀 **Production Deployment**
+
+### **Environment Setup**
+```bash
+# Set production environment
+NODE_ENV=production
+
+# Use production MySQL credentials
+MYSQL_HOST=production_mysql_host
+MYSQL_USER=production_user
+MYSQL_PASSWORD=production_password
+
+# Set production CETEC API URL
+API_URL=https://production.cetecerp.com
+```
+
+### **Process Management**
+- Use PM2 or similar process manager for production
+- Set up proper logging and monitoring
+- Configure health checks for the backend API
+
+## 📚 **Related Documentation**
+
+- [README.md](./README.md) - Main application documentation
+- [ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md) - MySQL and environment configuration
+- [CLOUD_SQL_PROXY_SETUP.md](./CLOUD_SQL_PROXY_SETUP.md) - Google Cloud SQL Proxy configuration
+- [API_SETUP.md](./API_SETUP.md) - CETEC API integration details

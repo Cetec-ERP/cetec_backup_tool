@@ -4,13 +4,12 @@ import CustomerCard from './CustomerCard';
 interface DataTableProps {
   data: any[];
   title?: string;
-  columns?: string[]; // Optional array of column keys to display
-  onTimestampUpdate?: (customerId: string, timestamp: string) => void; // Callback to update timestamp in parent
-  onDatabaseStatusUpdate?: (customerId: string, databaseExists: any) => void; // Callback to update database status
+  columns?: string[];
+  onTimestampUpdate?: (customerId: string, timestamp: string) => void;
+  onDatabaseStatusUpdate?: (customerId: string, databaseExists: any) => void;
 }
 
 const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDatabaseStatusUpdate }) => {
-  // Track which customers have had their Devel buttons hidden after Pull
   const [hiddenDevelButtons, setHiddenDevelButtons] = useState<Set<string>>(new Set());
 
   if (!data || data.length === 0) {
@@ -19,7 +18,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
 
   const handleActionClick = async (item: any) => {
     try {
-      // Record the pull timestamp FIRST, before doing anything else
       const timestampResponse = await fetch('http://localhost:3001/api/pull/record', {
         method: 'POST',
         headers: {
@@ -31,20 +29,16 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
       if (!timestampResponse.ok) {
         console.warn('Failed to record pull timestamp:', timestampResponse.status);
       } else {
-        // Update the UI with the new timestamp immediately
         const timestampData = await timestampResponse.json();
         if (timestampData.success && onTimestampUpdate) {
           onTimestampUpdate(item.id, timestampData.timestamp);
         }
       }
       
-      // Immediately hide the Devel button for this customer
       setHiddenDevelButtons(prev => new Set(prev).add(String(item.id)));
       
-      // Schedule the MySQL check immediately - this is the important part!
       const timeoutId = setTimeout(async () => {
         try {
-          // Instead of calling the API, make a direct MySQL check for this specific customer
           const mysqlCheckResponse = await fetch('http://localhost:3001/api/mysql/check', {
             method: 'POST',
             headers: {
@@ -78,9 +72,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
         } catch (error) {
           console.error('MySQL check failed:', error);
         }
-      }, 60000); // 1 minute delay
+      }, 60000);
       
-      // Now handle the backup request as a completely separate, non-blocking operation
       const handleBackupRequest = async () => {
         try {
           const domain = item.domain;
@@ -95,11 +88,10 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
           
           const backupApiUrl = `http://localhost:3001/api/backup/request`;
           
-          // Add a timeout to prevent hanging
           const controller = new AbortController();
           const timeoutId = setTimeout(() => {
             controller.abort();
-          }, 10000); // 10 second timeout
+          }, 10000);
           
           const backupResponse = await fetch(backupApiUrl, {
             method: 'POST',
@@ -119,11 +111,9 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
           const backupResult = await backupResponse.json();
 
         } catch (backupError: any) {
-          // Backup request failed silently (non-blocking)
         }
       };
       
-      // Start the backup request in a separate thread (non-blocking)
       handleBackupRequest().catch(error => {
         console.error('Backup request thread error:', error);
       });
