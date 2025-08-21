@@ -1,4 +1,5 @@
 import React from 'react';
+import residentDBsConfig from '../config/resident-dbs.json';
 
 interface CustomerCardProps {
   item: any;
@@ -13,6 +14,37 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   hiddenDevelButtons, 
   onActionClick 
 }) => {
+  // Check if a domain has a resident database mapping
+  const hasResidentDatabase = (domain: string): boolean => {
+    if (!residentDBsConfig || !domain) {
+      return false;
+    }
+    
+    const hasDB = domain.toLowerCase() in residentDBsConfig || 
+           Object.keys(residentDBsConfig).some(key => key.toLowerCase() === domain.toLowerCase());
+    
+    return hasDB;
+  };
+
+  // Check if customer is unavailable for backups
+  const isUnavailableForBackups = (): boolean => {
+    const isItarHosting = Boolean(item.itar_hosting_bc);
+    const isResidentHosting = Boolean(item.resident_hosting);
+    const domain = item.domain;
+    
+    // First condition: ITAR hosting customers
+    if (isItarHosting) {
+      return true;
+    }
+    
+    // Second condition: Resident hosting customers without database mapping
+    if (isResidentHosting && domain) {
+      return !hasResidentDatabase(domain);
+    }
+    
+    return false;
+  };
+
   // Normalize priority support values to only valid options
   const normalizePrioritySupport = (value: string): string => {
     const normalizedValue = value.toLowerCase().trim();
@@ -70,10 +102,8 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   };
 
   const renderActions = () => {
-    const isItarHosting = Boolean(item.itar_hosting_bc);
-    const isDatabaseUnavailable = item.database_exists === 'unavailable';
-    
-    if (isItarHosting || isDatabaseUnavailable) {
+    // Check if customer is unavailable for backups
+    if (isUnavailableForBackups()) {
       return null;
     }
     
@@ -135,40 +165,22 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   };
 
   const renderProductionButton = () => {
-    // Debug: Log all available fields for this customer
-    console.log(`Production button debug for customer ${item.id}:`, {
-      domain: item.domain,
-      resident_hosting: item.resident_hosting,
-      techx_password: item.techx_password,
-      hasTechxPassword: Boolean(item.techx_password),
-      allFields: Object.keys(item)
-    });
-
     const domain = item.domain;
     if (!domain || domain === 'undefined' || domain.trim() === '') {
-      console.log(`Production button: No domain for customer ${item.id}`);
       return null;
     }
 
-    const isResidentHosting = Boolean(item.resident_hosting);
-    console.log(`Production button: Customer ${item.id}, resident_hosting: ${item.resident_hosting}, isResidentHosting: ${isResidentHosting}`);
-    
-    // Only show Production button if resident_hosting is false
-    if (isResidentHosting) {
-      console.log(`Production button: Customer ${item.id} has resident hosting, hiding button`);
+    // Check if customer is unavailable for backups
+    if (isUnavailableForBackups()) {
       return null;
     }
 
     const techxPassword = item.techx_password;
-    console.log(`Production button: Customer ${item.id}, techx_password: ${techxPassword ? 'present' : 'missing'}`);
-    
     if (!techxPassword) {
-      console.log(`Production button: Customer ${item.id} missing techx_password, hiding button`);
       return null;
     }
 
     const productionUrl = `https://${domain}.cetecerp.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
-    console.log(`Production button: Customer ${item.id}, showing button with URL: ${productionUrl}`);
     
     return (
       <button
@@ -200,6 +212,11 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
               #{item.id}
             </a>
             <span className="total-users">{totalUsers} users</span>
+            {item.itar_hosting_bc && (
+              <span className="itar-chip">
+                {String(item.itar_hosting_bc)}
+              </span>
+            )}
           </div>
         </div>
         
@@ -209,7 +226,9 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         
         <div className="card-actions">
           <div className="timestamp-display">
-            {item.lastPulled ? (
+            {isUnavailableForBackups() ? (
+              <span className="unavailable-text">Unavailable</span>
+            ) : item.lastPulled ? (
               <span className="timestamp-text">
                 {new Date(item.lastPulled).toLocaleDateString()}
               </span>

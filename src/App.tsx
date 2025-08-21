@@ -202,7 +202,7 @@ function App() {
                 </div>
                 <div className="summary-item">
                   <span className="summary-label">ITAR:</span>
-                  <span className="summary-value info">
+                  <span className="summary-value danger">
                     {filteredData.filter((customer: any) => {
                       const itarValue = customer.itar_hosting_bc;
                       // Debug: log ITAR values to understand the data structure

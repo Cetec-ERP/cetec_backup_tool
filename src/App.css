@@ -943,6 +943,48 @@ body {
   font-weight: 500;
 }
 
+.itar-chip {
+  background: #dc3545;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-badge.itar {
+  background: #dc3545;
+}
+
+.status-badge.resident {
+  background: #fd7e14;
+}
+
+.status-badge.unavailable {
+  background: #6c757d;
+}
+
+.status-badge.no-database {
+  background: #dc3545;
+}
+
+.status-badge.has-database {
+  background: #20c997;
+}
+
 /* Priority Chip Container */
 .priority-chip-container {
   display: flex;
@@ -1096,6 +1138,18 @@ body {
   font-size: 14px;
   color: #6c757d;
   font-style: italic;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  max-width: none;
+  position: relative;
+  z-index: 1;
+}
+
+.unavailable-text {
+  font-size: 14px;
+  color: #dc3545;
+  font-weight: 600;
   white-space: nowrap;
   overflow: visible;
   text-overflow: clip;
