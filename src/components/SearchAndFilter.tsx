@@ -79,6 +79,12 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
           if (value !== 'false') {
             values.add(value);
           }
+        } else if (column === 'test_environment') {
+          // For test_environment, exclude falsy values (including "0") from dynamic options
+          // These will be handled by the "No" filter instead
+          if (value && value !== '0' && value !== 'false') {
+            values.add(value);
+          }
         } else {
           values.add(value);
         }
@@ -187,13 +193,28 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
             }
             return true;
           } else if (column === 'itar_hosting_bc') {
-            // Handle itar_hosting_bc specifically
+            // Handle itar_hosting_bc specifically - convert both values to booleans for comparison
+            const filterValue = value === 'true';
             const itemValue = item[column];
-            return itemValue === value;
+            
+            if (filterValue === true) {
+              // Filter for "Yes" - show items with truthy itar_hosting_bc values
+              return Boolean(itemValue);
+            } else if (filterValue === false) {
+              // Filter for "No" - show items with falsy itar_hosting_bc values
+              return !Boolean(itemValue);
+            }
+            return true;
           } else if (column === 'test_environment') {
-            // Handle test_environment specifically
-            const itemValue = item[column];
-            return itemValue === value;
+            // Handle test_environment specifically - handle "false" specially for all falsy values
+            if (value === 'false') {
+              // Filter for "No" - show items with falsy test_environment values
+              const itemValue = item[column];
+              return !itemValue || itemValue === 0 || itemValue === '0' || itemValue === false || itemValue === null || itemValue === undefined || itemValue === '';
+            } else {
+              // For other values, use exact match (including dynamic truthy values)
+              return String(item[column] || '') === value;
+            }
           } else {
             const itemValue = String(item[column] || '');
             return itemValue === value;
@@ -332,13 +353,12 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
                     <select
                       id="itar_hosting_bc"
                       value={filters.itar_hosting_bc}
-                      onChange={(e) => setFilters({ ...filters, itar_hosting_bc: e.target.value })}
+                      onChange={(e) => setFilters(prev => ({ ...prev, itar_hosting_bc: e.target.value }))}
                       className="filter-select"
                     >
                       <option value="">All</option>
-                      {getUniqueValues('itar_hosting_bc').map(value => (
-                        <option key={value} value={value}>{value}</option>
-                      ))}
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
                     </select>
                   </div>
 
@@ -347,13 +367,21 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
                     <select
                       id="test_environment"
                       value={filters.test_environment}
-                      onChange={(e) => setFilters({ ...filters, test_environment: e.target.value })}
+                      onChange={(e) => setFilters(prev => ({ ...prev, test_environment: e.target.value }))}
                       className="filter-select"
                     >
                       <option value="">All</option>
-                      {getUniqueValues('test_environment').map(value => (
-                        <option key={value} value={value}>{value}</option>
-                      ))}
+                      {getUniqueValues('test_environment').map(value => {
+                        let displayValue = value;
+                        const stringValue = String(value);
+                        if (stringValue === 'true') {
+                          displayValue = 'Yes';
+                        } else if (stringValue === 'false') {
+                          displayValue = 'No';
+                        }
+                        return <option key={value} value={value}>{displayValue}</option>;
+                      })}
+                      <option value="false">No</option>
                     </select>
                   </div>
                 </div>
