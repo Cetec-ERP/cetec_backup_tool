@@ -330,20 +330,19 @@ body {
   position: relative;
 }
 
-/* Floating Filter Modal */
+/* Filter Modal */
 .filter-modal {
   position: absolute;
   top: 100%;
-  left: 0;
-  width: 600px;
-  max-width: 90vw;
+  right: 0;
   background: white;
   border: 1px solid #e9ecef;
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-  margin-top: 8px;
-  animation: modalSlideIn 0.2s ease-out;
+  min-width: 280px;
+  max-width: 320px;
+  width: fit-content;
 }
 
 /* Ensure modal doesn't extend beyond viewport */
@@ -412,63 +411,40 @@ body {
   color: #333;
 }
 
+/* Filter Modal Content */
 .filter-modal-content {
-  padding: 20px;
-}
-
-.filter-toggle-btn:hover {
-  background-color: #5a6268;
-  transform: none;
-  box-shadow: none;
-}
-
-.filter-toggle-btn:focus {
-  outline: none;
-  box-shadow: none;
-}
-
-.filter-toggle-btn:active {
-  transform: none;
-  box-shadow: none;
-}
-
-/* Filter Section */
-.filter-section {
-  border-top: 1px solid #e9ecef;
-  padding-top: 20px;
-  animation: none;
+  padding: 16px;
 }
 
 .filter-row {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  align-items: end;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .filter-group {
-  flex: 1;
-  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
 }
 
 .filter-label {
-  display: block;
   font-weight: 600;
   color: #333;
   font-size: 14px;
-  margin-bottom: 6px;
 }
 
 .filter-select {
-  width: 100%;
   padding: 8px 12px;
   border: 1px solid #e9ecef;
   border-radius: 6px;
   font-size: 14px;
   background: white;
   color: #333;
-  transition: border-color 0.2s ease;
+  min-width: 120px;
+  max-width: 200px;
+  width: fit-content;
 }
 
 .filter-select:focus {
@@ -1286,6 +1262,28 @@ body {
 
 .production-button:hover {
   background: #157347;
+  transform: translateY(-1px);
+}
+
+.test-button {
+  background: #fd7e14;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: fit-content;
+  width: auto;
+  max-width: none;
+}
+
+.test-button:hover {
+  background: #e8590c;
   transform: translateY(-1px);
 }
 

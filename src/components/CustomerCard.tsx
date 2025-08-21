@@ -196,6 +196,51 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     );
   };
 
+  const renderTestButton = () => {
+    const domain = item.domain;
+    if (!domain || domain === 'undefined' || domain.trim() === '') {
+      return null;
+    }
+
+    // Check if customer has truthy test_environment (but not "0") and falsy resident_hosting
+    const testEnvironment = item.test_environment;
+    const isResidentHosting = Boolean(item.resident_hosting);
+    
+    if (!testEnvironment || testEnvironment === '0' || testEnvironment === 0 || isResidentHosting) {
+      return null;
+    }
+
+    // Determine the test URL based on domain format
+    let testUrl;
+    if (domain.includes('.')) {
+      // Domain contains a period - use the domain as-is with _test suffix
+      testUrl = `https://${domain}_test.cetecerp.com/auth/login?username=techx&password=REMOVED`;
+    } else {
+      // Domain doesn't contain a period - append _test.cetecerp.com
+      testUrl = `https://${domain}_test.cetecerp.com/auth/login?username=techx&password=REMOVED`;
+    }
+
+    // Determine button text based on test environment value
+    let buttonText = 'Test ↗';
+    if (testEnvironment === 'Update Nightly') {
+      buttonText = 'Test (nightly) ↗';
+    } else if (testEnvironment === 'Pause Updates') {
+      buttonText = 'Test (paused) ↗';
+    } else if (testEnvironment === 'Update Weekly') {
+      buttonText = 'Test (weekly) ↗';
+    }
+    
+    return (
+      <button
+        className="test-button"
+        onClick={() => window.open(testUrl, '_blank', 'noopener,noreferrer')}
+        title="Open Test Environment"
+      >
+        {buttonText}
+      </button>
+    );
+  };
+
   const totalUsers = Math.round(Number(item.num_prod_users || 0) + Number(item.num_full_users || 0));
 
   return (
@@ -244,6 +289,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
             {renderActions()}
             {renderDevelButton()}
             {renderProductionButton()}
+            {renderTestButton()}
           </div>
         </div>
       </div>

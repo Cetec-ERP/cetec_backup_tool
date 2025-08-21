@@ -388,7 +388,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
 
                 <div className="filter-actions">
                   <button onClick={clearAllFilters} className="clear-filters-btn" disabled={!hasActiveFilters}>
-                    🗑️ Clear All Filters
+                    🗑️ Clear Filters
                   </button>
                 </div>
               </div>
