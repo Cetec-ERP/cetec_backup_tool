@@ -248,7 +248,7 @@ function App() {
             title={`Customers (with Database Verification)`}
             columns={[
               'id', 'name', 'total_users', 'domain', 'database_exists',
-              'ok_to_bill', 'priority_support', 'resident_hosting', 'test_environment', 'test_domain', 'itar_hosting_bc'
+              'ok_to_bill', 'priority_support', 'resident_hosting', 'test_environment', 'itar_hosting_bc'
             ]}
             onTimestampUpdate={handleTimestampUpdate}
             onDatabaseStatusUpdate={handleDatabaseStatusUpdate}
