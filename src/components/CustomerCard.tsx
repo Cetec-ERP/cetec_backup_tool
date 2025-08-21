@@ -65,7 +65,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   const renderPrioritySupport = () => {
     const normalizedValue = normalizePrioritySupport(String(item.priority_support || ''));
     if (normalizedValue === 'false') {
-      return <span className="no-priority">No Priority Support</span>;
+      return <span className="no-priority">No Support Tier</span>;
     }
     
     return (
@@ -170,17 +170,20 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       return null;
     }
 
-    // Check if customer is unavailable for backups
-    if (isUnavailableForBackups()) {
-      return null;
-    }
-
     const techxPassword = item.techx_password;
     if (!techxPassword) {
       return null;
     }
 
-    const productionUrl = `https://${domain}.cetecerp.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+    // Determine the production URL based on domain format
+    let productionUrl;
+    if (domain.includes('.')) {
+      // Domain contains a period - use the domain as-is
+      productionUrl = `https://${domain}/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+    } else {
+      // Domain doesn't contain a period - append .cetecerp.com
+      productionUrl = `https://${domain}.cetecerp.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+    }
     
     return (
       <button
