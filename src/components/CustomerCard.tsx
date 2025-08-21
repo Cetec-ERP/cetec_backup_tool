@@ -175,14 +175,21 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       return null;
     }
 
-    // Determine the production URL based on domain format
+    // Determine the production URL based on domain format and hosting type
     let productionUrl;
-    if (domain.includes('.')) {
-      // Domain contains a period - use the domain as-is
-      productionUrl = `https://${domain}/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+    const isResidentHosting = Boolean(item.resident_hosting);
+    
+    if (isResidentHosting) {
+        if (domain.includes('.')) {
+            // Domain contains a period - use the domain as-is
+            productionUrl = `https://${domain}/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+        } else {
+            // Resident hosting: use cetecerp.{domain}.com format
+            productionUrl = `https://cetecerp.${domain}.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+        }
     } else {
-      // Domain doesn't contain a period - append .cetecerp.com
-      productionUrl = `https://${domain}.cetecerp.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+        // Non-resident hosting: use existing logic
+        productionUrl = `https://${domain}.cetecerp.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
     }
     
     return (
