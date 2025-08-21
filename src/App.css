@@ -1213,6 +1213,28 @@ body {
   transform: translateY(-1px);
 }
 
+.production-button {
+  background: #198754;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: fit-content;
+  width: auto;
+  max-width: none;
+}
+
+.production-button:hover {
+  background: #157347;
+  transform: translateY(-1px);
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .card-header {

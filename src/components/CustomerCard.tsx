@@ -134,6 +134,53 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     );
   };
 
+  const renderProductionButton = () => {
+    // Debug: Log all available fields for this customer
+    console.log(`Production button debug for customer ${item.id}:`, {
+      domain: item.domain,
+      resident_hosting: item.resident_hosting,
+      techx_password: item.techx_password,
+      hasTechxPassword: Boolean(item.techx_password),
+      allFields: Object.keys(item)
+    });
+
+    const domain = item.domain;
+    if (!domain || domain === 'undefined' || domain.trim() === '') {
+      console.log(`Production button: No domain for customer ${item.id}`);
+      return null;
+    }
+
+    const isResidentHosting = Boolean(item.resident_hosting);
+    console.log(`Production button: Customer ${item.id}, resident_hosting: ${item.resident_hosting}, isResidentHosting: ${isResidentHosting}`);
+    
+    // Only show Production button if resident_hosting is false
+    if (isResidentHosting) {
+      console.log(`Production button: Customer ${item.id} has resident hosting, hiding button`);
+      return null;
+    }
+
+    const techxPassword = item.techx_password;
+    console.log(`Production button: Customer ${item.id}, techx_password: ${techxPassword ? 'present' : 'missing'}`);
+    
+    if (!techxPassword) {
+      console.log(`Production button: Customer ${item.id} missing techx_password, hiding button`);
+      return null;
+    }
+
+    const productionUrl = `https://${domain}.cetecerp.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+    console.log(`Production button: Customer ${item.id}, showing button with URL: ${productionUrl}`);
+    
+    return (
+      <button
+        className="production-button"
+        onClick={() => window.open(productionUrl, '_blank', 'noopener,noreferrer')}
+        title="Open Production Environment"
+      >
+        Production ↗
+      </button>
+    );
+  };
+
   const totalUsers = Math.round(Number(item.num_prod_users || 0) + Number(item.num_full_users || 0));
 
   return (
@@ -174,6 +221,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           <div className="action-buttons">
             {renderActions()}
             {renderDevelButton()}
+            {renderProductionButton()}
           </div>
         </div>
       </div>

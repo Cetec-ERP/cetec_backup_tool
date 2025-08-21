@@ -426,7 +426,7 @@ app.get("/api/cetec/customer", async (req, res) => {
     
     // Limit columns to only what we need for better performance
     if (!columns) {
-      queryParams.append('columns', 'id,name,domain,ok_to_bill,priority_support,resident_hosting,test_environment,test_domain,itar_hosting_bc,num_prod_users,num_full_users');
+      queryParams.append('columns', 'id,name,domain,ok_to_bill,priority_support,resident_hosting,test_environment,test_domain,itar_hosting_bc,num_prod_users,num_full_users,techx_password');
     }
     
     queryParams.append('preshared_token', preshared_token);
