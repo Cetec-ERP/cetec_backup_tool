@@ -14,6 +14,8 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   hiddenDevelButtons, 
   onActionClick 
 }) => {
+  const techxPassword = import.meta.env.VITE_TECHX_PASSWORD;
+
   const hasResidentDatabase = (domain: string): boolean => {
     if (!residentDBsConfig || !domain) {
       return false;
@@ -141,7 +143,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       return null;
     }
 
-    const customerUrl = `http://${domain}.cetecerpdevel.com`;
+    const customerUrl = `http://${domain}.cetecerpdevel.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
     
     return (
       <button
@@ -160,8 +162,8 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       return null;
     }
 
-    const techxPassword = item.techx_password;
-    if (!techxPassword) {
+    const techxProdPassword = item.techx_password;
+    if (!techxProdPassword) {
       return null;
     }
 
@@ -170,12 +172,12 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     
     if (isResidentHosting) {
         if (domain.includes('.')) {
-            productionUrl = `https://${domain}/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+            productionUrl = `https://${domain}/auth/login?username=techx&password=${encodeURIComponent(techxProdPassword)}`;
         } else {
-            productionUrl = `https://cetecerp.${domain}.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+            productionUrl = `https://cetecerp.${domain}.com/auth/login?username=techx&password=${encodeURIComponent(techxProdPassword)}`;
         }
     } else {
-        productionUrl = `https://${domain}.cetecerp.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+        productionUrl = `https://${domain}.cetecerp.com/auth/login?username=techx&password=${encodeURIComponent(techxProdPassword)}`;
     }
     
     return (
@@ -229,10 +231,9 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
 
     let testUrl;
     if (isResidentHosting) {
-      testUrl = `https://cetecerp-beta.${domain}.com/auth/login?username=techx&password=REMOVED`;
+      testUrl = `https://cetecerp-beta.${domain}.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
     } else {
-        testUrl = `https://${domain}_test.cetecerp.com/auth/login?username=techx&password=REMOVED`;
-      }
+      testUrl = `https://${domain}_test.cetecerp.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
     }
     
     return (

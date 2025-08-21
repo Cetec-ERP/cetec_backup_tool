@@ -616,7 +616,7 @@ app.post("/api/backup/request", async (req, res) => {
       return res.status(400).json({ error: "Database name is required" });
     }
     
-    const backupApiUrl = `http://dev.cetecerpdevel.com:3399/getbackup?password=REMOVED&dbname=${encodeURIComponent(dbname)}`;
+    const backupApiUrl = `http://dev.cetecerpdevel.com:3399/getbackup?password=${process.env.TECHX_PASSWORD}&dbname=${encodeURIComponent(dbname)}`;
     
     const backupResponse = await fetch(backupApiUrl);
     
