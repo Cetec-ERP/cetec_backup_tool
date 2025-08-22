@@ -51,7 +51,7 @@ The server automatically detects your environment and chooses the right connecti
 
 3. **Test connection**:
    ```bash
-   curl http://localhost:5001/api/test-mysql
+   curl http://backups.cetecerpdevel.com:5001/api/test-mysql
    ```
 
 ### **Production (Direct Host)**
