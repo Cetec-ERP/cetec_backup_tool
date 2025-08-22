@@ -1055,30 +1055,17 @@ body {
   z-index: 1;
 }
 
-.polling-indicator {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  background: var(--info-color);
-  color: white;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
 
-.polling-text {
-  margin-left: 6px;
-}
 
 .polling-spinner {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-top: 2px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  margin-right: 6px;
+  flex-shrink: 0;
 }
 
 @keyframes spin {

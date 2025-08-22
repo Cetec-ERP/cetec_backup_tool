@@ -4,11 +4,19 @@
     "customerId": 1634
   },
   "4300": {
-    "lastPulled": "2025-08-22T02:40:51.377Z",
+    "lastPulled": "2025-08-22T02:59:31.565Z",
     "customerId": 4300
   },
   "6722": {
     "lastPulled": "2025-08-21T22:54:09.909Z",
     "customerId": 6722
+  },
+  "9622": {
+    "lastPulled": "2025-08-22T03:14:12.341Z",
+    "customerId": 9622
+  },
+  "12495": {
+    "lastPulled": "2025-08-22T03:23:42.551Z",
+    "customerId": 12495
   }
 }
