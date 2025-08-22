@@ -1055,6 +1055,37 @@ body {
   z-index: 1;
 }
 
+.polling-indicator {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--info-color);
+  color: white;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.polling-text {
+  margin-left: 6px;
+}
+
+.polling-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .action-button.primary {
   background: var(--accent-primary);
   color: white;
@@ -1078,6 +1109,15 @@ body {
 .action-button.primary:hover {
   background: #0b5ed7;
   transform: translateY(-1px);
+}
+
+.action-button:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.6;
 }
 
 .button-icon {
@@ -1108,6 +1148,15 @@ body {
 .action-button.refresh:hover {
   background: #0b5ed7;
   transform: translateY(-1px);
+}
+
+.action-button.refresh:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.6;
 }
 
 
