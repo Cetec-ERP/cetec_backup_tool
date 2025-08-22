@@ -15,6 +15,41 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
 }) => {
   const techxPassword = import.meta.env.VITE_TECHX_PASSWORD;
 
+  const normalizePrioritySupport = (value: string): string => {
+    if (!value || value === 'undefined' || value === 'null' || value === '0' || value === 'false') {
+      return 'false';
+    }
+    
+    const prioritySupport = String(value).toLowerCase().trim();
+    
+    if (prioritySupport === 'lite' || prioritySupport === 'l') {
+      return 'lite';
+    }
+    
+    if (prioritySupport === 'standard' || prioritySupport === 'std' || prioritySupport === 's') {
+      return 'standard';
+    }
+    
+    if (prioritySupport === 'enterprise' || prioritySupport === 'ent' || prioritySupport === 'e') {
+      return 'enterprise';
+    }
+    
+    return 'false';
+  };
+
+  const renderPrioritySupport = () => {
+    const normalizedValue = normalizePrioritySupport(String(item.priority_support || ''));
+    if (normalizedValue === 'false') {
+      return <span className="no-priority">No support tier</span>;
+    }
+    
+    return (
+      <span className={`priority-chip ${normalizedValue}`}>
+        {normalizedValue.charAt(0).toUpperCase() + normalizedValue.slice(1)}
+      </span>
+    );
+  };
+
   const isUnavailableForBackups = (): boolean => {
     if (item.resident_hosting && item.database_exists === 'unavailable') {
       return true;
@@ -234,7 +269,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         </div>
         
         <div className="priority-chip-container">
-          {/* Removed renderPrioritySupport as it was removed from props */}
+          {renderPrioritySupport()}
         </div>
         
         <div className="card-actions">
