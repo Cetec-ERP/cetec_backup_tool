@@ -4,6 +4,7 @@ import residentDBsConfig from '../config/resident-dbs.json';
 interface CustomerCardProps {
   item: any;
   hiddenDevelButtons: Set<string>;
+  isPolling: boolean;
   onActionClick: (item: any) => void;
   onTimestampUpdate?: (customerId: string, timestamp: string) => void;
   onDatabaseStatusUpdate?: (customerId: string, databaseExists: any) => void;
@@ -12,6 +13,7 @@ interface CustomerCardProps {
 const CustomerCard: React.FC<CustomerCardProps> = ({ 
   item, 
   hiddenDevelButtons, 
+  isPolling,
   onActionClick 
 }) => {
   const techxPassword = import.meta.env.VITE_TECHX_PASSWORD;
@@ -101,6 +103,42 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       return null;
     }
     
+    // If polling is active, show disabled "Pulling..." button
+    if (isPolling) {
+      if (item.database_exists === true && item.lastPulled) {
+        return (
+          <button 
+            className="action-button refresh"
+            disabled
+            title="Backup in progress..."
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="button-icon">
+              <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+              <polyline points="12,15 12,8"/>
+              <polyline points="9,12 12,15 15,12"/>
+            </svg>
+            Pulling...
+          </button>
+        );
+      }
+      
+      return (
+        <button 
+          className="action-button primary"
+          disabled
+          title="Backup in progress..."
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="button-icon">
+            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+            <polyline points="12,15 12,8"/>
+            <polyline points="9,12 12,15 15,12"/>
+          </svg>
+          Pulling...
+        </button>
+      );
+    }
+    
+    // Normal state - show enabled buttons
     if (item.database_exists === true && item.lastPulled) {
       return (
         <button 
@@ -289,7 +327,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
               <span className="unavailable-text">Backup Unavailable</span>
             ) : item.lastPulled ? (
               <span className="timestamp-text">
-                {new Date(item.lastPulled).toLocaleDateString()}
+                {new Date(item.lastPulled).toLocaleDateString()} {new Date(item.lastPulled).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             ) : (
               <span className="no-timestamp">Never pulled</span>
@@ -301,6 +339,12 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
             {renderDevelButton()}
             {renderProductionButton()}
             {renderTestButton()}
+            {isPolling && (
+              <div className="polling-indicator">
+                <div className="polling-spinner"></div>
+                <span className="polling-text">Checking database...</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

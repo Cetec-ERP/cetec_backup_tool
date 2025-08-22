@@ -618,7 +618,21 @@ app.post("/api/backup/request", async (req, res) => {
     
     const backupApiUrl = `http://dev.cetecerpdevel.com:3399/getbackup?password=${process.env.TECHX_PASSWORD}&dbname=${encodeURIComponent(dbname)}`;
     
-    const backupResponse = await fetch(backupApiUrl);
+    console.log(`🚀 [BACKEND] Sending backup request to external API for database: ${dbname}`);
+    
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log(`⏰ [BACKEND] External backup API timeout for ${dbname} after 45 seconds`);
+      controller.abort();
+    }, 45000); // 45 second timeout for external API
+    
+    const backupResponse = await fetch(backupApiUrl, {
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    console.log(`📡 [BACKEND] External backup API response for ${dbname}: ${backupResponse.status}`);
     
     if (!backupResponse.ok) {
       throw new Error(`Backup request failed: ${backupResponse.status}`);
@@ -633,12 +647,21 @@ app.post("/api/backup/request", async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error in backup request:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      message: "Backup request failed"
-    });
+    if (error.name === 'AbortError') {
+      console.log(`⏰ [BACKEND] Backup request timed out for ${req.body.dbname || 'unknown'} after 45 seconds`);
+      res.status(408).json({
+        success: false,
+        error: "Request timeout",
+        message: "Backup request timed out - external service took too long to respond"
+      });
+    } else {
+      console.error('Error in backup request:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        message: "Backup request failed"
+      });
+    }
   }
 });
 
