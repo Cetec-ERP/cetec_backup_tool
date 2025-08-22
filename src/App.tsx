@@ -23,25 +23,38 @@ function App() {
       
       const response = await axios.get(url, { timeout: 60000 });
       
-      if (response.data && response.data.customers) {
-        const sortedCustomers = response.data.customers.sort((a: any, b: any) => {
-          const nameA = (a.name || '').toLowerCase();
-          const nameB = (b.name || '').toLowerCase();
-          return nameA.localeCompare(nameB);
-        });
-        
-        setData(sortedCustomers);
-        setFilteredData(sortedCustomers);
+      // Add debugging to see what we're actually getting
+      console.log('API Response:', response.data);
+      
+      let customersToSort = [];
+      
+      if (response.data && response.data.customers && Array.isArray(response.data.customers)) {
+        // Expected format: { customers: [...] }
+        customersToSort = response.data.customers;
+      } else if (response.data && Array.isArray(response.data)) {
+        // Direct array format: [...]
+        customersToSort = response.data;
       } else {
-        const sortedCustomers = response.data.sort((a: any, b: any) => {
-          const nameA = (a.name || '').toLowerCase();
-          const nameB = (b.name || '').toLowerCase();
-          return nameA.localeCompare(nameB);
-        });
-        
-        setData(sortedCustomers);
-        setFilteredData(sortedCustomers);
+        // Unexpected data format
+        console.error('Unexpected API response format:', response.data);
+        throw new Error('API returned unexpected data format');
       }
+      
+      if (customersToSort.length === 0) {
+        setData([]);
+        setFilteredData([]);
+        setLoading(false);
+        return;
+      }
+      
+      const sortedCustomers = customersToSort.sort((a: any, b: any) => {
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      
+      setData(sortedCustomers);
+      setFilteredData(sortedCustomers);
       
       setLoading(false);
     } catch (err: any) {
