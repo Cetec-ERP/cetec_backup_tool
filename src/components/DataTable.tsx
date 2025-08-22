@@ -7,9 +7,16 @@ interface DataTableProps {
   columns?: string[];
   onTimestampUpdate?: (customerId: string, timestamp: string) => void;
   onDatabaseStatusUpdate?: (customerId: string, databaseExists: any) => void;
+  validationCache?: Map<string, { 
+    reachable: boolean; 
+    status?: number; 
+    error?: string; 
+    finalUrl?: string;
+    reason?: string;
+  }>;
 }
 
-const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDatabaseStatusUpdate }) => {
+const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDatabaseStatusUpdate, validationCache }) => {
   const [hiddenDevelButtons, setHiddenDevelButtons] = useState<Set<string>>(new Set());
   const [pollingCustomers, setPollingCustomers] = useState<Set<string>>(new Set());
 
@@ -33,7 +40,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
         }
         
         // Check database status
-        const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+        const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
         const mysqlCheckResponse = await fetch(`${apiBaseUrl}/mysql/check`, {
           method: 'POST',
           headers: {
@@ -112,7 +119,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
     try {
       setPollingCustomers(prev => new Set(prev).add(String(item.id)));
       
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
       const timestampResponse = await fetch(`${apiBaseUrl}/pull/record`, {
         method: 'POST',
         headers: {
@@ -190,6 +197,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
             hiddenDevelButtons={hiddenDevelButtons}
             isPolling={pollingCustomers.has(String(item.id))}
             onActionClick={handleActionClick}
+            onDatabaseStatusUpdate={onDatabaseStatusUpdate}
+            validationCache={validationCache}
           />
         ))}
       </div>
