@@ -125,7 +125,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
 
   return (
     <div className="customer-cards-container">
-      <h2 className="section-title">Customer Database Status</h2>
+      
       <div className="cards-grid">
         {data.map((item, index) => (
           <CustomerCard

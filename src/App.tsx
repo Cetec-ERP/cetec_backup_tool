@@ -3,6 +3,7 @@ import axios from 'axios';
 import { config } from './config';
 import DataTable from './components/DataTable';
 import SearchAndFilter from './components/SearchAndFilter';
+import DarkModeToggle from './components/DarkModeToggle';
 import './App.css';
 
 function App() {
@@ -64,9 +65,7 @@ function App() {
     startBackupProcess();
   }, []);
 
-  const handleSubmit = () => {
-    startBackupProcess();
-  };
+
 
   const handleTimestampUpdate = (customerId: string, timestamp: string, databaseExists?: any) => {
     setData(prevData => {
@@ -118,114 +117,129 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1 className="app-header">
-        Backups
-      </h1>
-      
-      <div className="button-container">
+      <div className="header-section">
+        <h1 className="app-header">
+          Cetec ERP Backup Tool 
+        </h1>
+        <DarkModeToggle />
       </div>
-
-      {loading && (
-        <div className="loading-container">
-          <p className='header-text'>
-            Loading customer data and checking databases...
-          </p>
-        </div>
-      )}
       
-      {error && (
-        <div className="error-container">
-          <strong className='header-text'>Error:</strong> {error}
-        </div>
-      )}
-
-      {!loading && !error && data && (
-        <>
-          <div className="combined-header-section">
-            <div className="search-filter-row">
-              <SearchAndFilter 
-                data={data} 
-                onFilterChange={setFilteredData}
-              />
-              
-              <div className="refresh-section">
-                <button 
-                  className="refresh-button"
-                  onClick={startBackupProcess}
-                  disabled={loading}
-                >
-                  {loading ? 'Loading...' : 'Refresh Data'}
-                </button>
-              </div>
+      <div className="combined-header-section">
+        {loading ? (
+          <>
+            <div className="loading-placeholder">
+              <div className="search-placeholder"></div>
             </div>
+            <div className="loading-placeholder">
+              <div className="refresh-placeholder"></div>
+            </div>
+            <div className="loading-placeholder">
+              <div className="summary-placeholder"></div>
+            </div>
+            <div className="loading-placeholder">
+              <div className="summary-placeholder"></div>
+            </div>
+            <div className="loading-placeholder">
+              <div className="summary-placeholder"></div>
+            </div>
+            <div className="loading-placeholder">
+              <div className="summary-placeholder"></div>
+            </div>
+            <div className="loading-placeholder">
+              <div className="summary-placeholder"></div>
+            </div>
+            <div className="loading-overlay">
+              <p className='header-text'>
+                Loading customer data and checking databases...
+              </p>
+            </div>
+          </>
+        ) : error ? (
+          <div className="error-container">
+            <strong className='header-text'>Error:</strong> {error}
+          </div>
+        ) : data ? (
+          <>
+            <SearchAndFilter 
+              data={data} 
+              onFilterChange={setFilteredData}
+            />
             
-            <div className="summary-container">
-              <div className="summary-stats">
-                <div className="summary-item">
-                  <span className="summary-label">Total:</span>
-                  <span className="summary-value">{filteredData.length}</span>
-                </div>
-                <div className="summary-item">
-                  <span className="summary-label">Has Backup:</span>
-                  <span className="summary-value success">
-                    {filteredData.filter((customer: any) => customer.database_exists === true).length}
-                  </span>
-                </div>
-                <div className="summary-item">
-                  <span className="summary-label">Resident:</span>
-                  <span className="summary-value warning">
-                    {filteredData.filter((customer: any) => customer.resident_hosting === true || customer.resident_hosting === 1).length}
-                  </span>
-                </div>
-                <div className="summary-item">
-                  <span className="summary-label">ITAR:</span>
-                  <span className="summary-value danger">
+            <div className="refresh-section">
+              <button 
+                className="refresh-button"
+                onClick={startBackupProcess}
+                disabled={loading}
+              >
+                {loading ? 'Loading...' : 'Refresh Data'}
+              </button>
+            </div>
+          
+              <div className="summary-item">
+                <span className="summary-label">Total:</span>
+                <span className="summary-value">{filteredData.length}</span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">Has Backup:</span>
+                <span className="summary-value success">
+                  {filteredData.filter((customer: any) => customer.database_exists === true).length}
+                </span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">Resident:</span>
+                <span className="summary-value warning">
+                  {filteredData.filter((customer: any) => customer.resident_hosting === true || customer.resident_hosting === 1).length}
+                </span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">ITAR:</span>
+                <span className="summary-value danger">
+                  {filteredData.filter((customer: any) => {
+                    const itarValue = customer.itar_hosting_bc;
+                    return itarValue === true || itarValue === 1 || 
+                           (typeof itarValue === 'string' && itarValue.toLowerCase().includes('itar')) ||
+                           (itarValue && itarValue !== '' && itarValue !== 'false' && itarValue !== 0);
+                  }).length}
+                </span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">Priority Support:</span>
+                <div className="priority-chips">
+                  <span className="priority-chip lite">
                     {filteredData.filter((customer: any) => {
-                      const itarValue = customer.itar_hosting_bc;
-                      return itarValue === true || itarValue === 1 || 
-                             (typeof itarValue === 'string' && itarValue.toLowerCase().includes('itar')) ||
-                             (itarValue && itarValue !== '' && itarValue !== 'false' && itarValue !== 0);
+                      const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                      return prioritySupport === 'lite' || prioritySupport === 'l';
+                    }).length}
+                  </span>
+                  <span className="priority-chip standard">
+                    {filteredData.filter((customer: any) => {
+                      const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                      return prioritySupport === 'standard' || prioritySupport === 'std' || prioritySupport === 's';
+                    }).length}
+                  </span>
+                  <span className="priority-chip enterprise">
+                    {filteredData.filter((customer: any) => {
+                      const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                      return prioritySupport === 'enterprise' || prioritySupport === 'ent' || prioritySupport === 'e';
                     }).length}
                   </span>
                 </div>
-                <div className="summary-item">
-                  <span className="summary-label">Priority Support:</span>
-                  <div className="priority-chips">
-                    <span className="priority-chip lite">
-                      {filteredData.filter((customer: any) => {
-                        const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
-                        return prioritySupport === 'lite' || prioritySupport === 'l';
-                      }).length}
-                    </span>
-                    <span className="priority-chip standard">
-                      {filteredData.filter((customer: any) => {
-                        const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
-                        return prioritySupport === 'standard' || prioritySupport === 'std' || prioritySupport === 's';
-                      }).length}
-                    </span>
-                    <span className="priority-chip enterprise">
-                      {filteredData.filter((customer: any) => {
-                        const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
-                        return prioritySupport === 'enterprise' || prioritySupport === 'ent' || prioritySupport === 'e';
-                      }).length}
-                    </span>
-                  </div>
-                </div>
               </div>
-            </div>
-          </div>
+          </>
+        ) : null}
+      </div>
 
-          <DataTable 
-            data={filteredData}
-            title={`Customers (with Database Verification)`}
-            columns={[
-              'id', 'name', 'total_users', 'domain', 'database_exists',
-              'ok_to_bill', 'priority_support', 'resident_hosting', 'test_environment', 'itar_hosting_bc'
-            ]}
-            onTimestampUpdate={handleTimestampUpdate}
-            onDatabaseStatusUpdate={handleDatabaseStatusUpdate}
-          />
-        </>
+      {!loading && !error && data && (
+        <DataTable 
+          data={filteredData}
+          title={`Customers (with Database Verification)`}
+          columns={[
+            'id', 'name', 'total_users', 'domain', 'database_exists',
+            'ok_to_bill', 'priority_support', 'resident_hosting', 'test_environment', 'itar_hosting_bc'
+          ]}
+          onTimestampUpdate={handleTimestampUpdate}
+          onDatabaseStatusUpdate={handleDatabaseStatusUpdate}
+        />
       )}
     </div>
   );
