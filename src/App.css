@@ -69,7 +69,88 @@ body {
   transition: background-color var(--transition-speed) ease;
 }
 
+/* Validation Status Styles */
+.validation-pending {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.9em;
+}
 
+.validation-validating {
+  color: var(--info-color);
+  font-weight: 500;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Devel Button Validation States */
+.devel-button.pending {
+  background-color: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.devel-button.validating {
+  background-color: var(--info-color);
+  color: white;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.devel-button.invalid {
+  background-color: var(--danger-color);
+  color: white;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.devel-button.error {
+  background-color: var(--warning-color);
+  color: white;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* Validation status indicators */
+.validation-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9em;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+.validation-status.pending {
+  color: var(--text-muted);
+  background-color: var(--bg-tertiary);
+}
+
+.validation-status.validating {
+  color: var(--info-color);
+  background-color: rgba(13, 202, 240, 0.1);
+}
+
+.validation-status.valid {
+  color: var(--success-color);
+  background-color: rgba(32, 201, 151, 0.1);
+}
+
+.validation-status.invalid {
+  color: var(--danger-color);
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.validation-status.error {
+  color: var(--warning-color);
+  background-color: rgba(253, 126, 20, 0.1);
+}
 
 /* Header Section */
 .header-section {
@@ -728,16 +809,109 @@ body {
   white-space: nowrap;
 }
 
+/* Summary value colors */
+.summary-value {
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  font-size: 14px;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-sizing: border-box;
+  line-height: 1;
+}
+
 .summary-value.success {
-  background: var(--success-color);
   color: white;
+  background-color: var(--success-color);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-sizing: border-box;
+  line-height: 1;
 }
 
 .summary-value.warning {
-  background: var(--warning-color);
   color: white;
+  background-color: var(--warning-color);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-sizing: border-box;
+  line-height: 1;
 }
 
+.summary-value.danger {
+  color: white;
+  background-color: var(--danger-color);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+.summary-value.info {
+  color: white;
+  background-color: var(--info-color);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+.summary-value.info .polling-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--info-color);
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+  min-height: 16px;
+  max-height: 16px;
+}
 
 
 /* Priority Support Chips */
@@ -757,6 +931,11 @@ body {
   justify-content: center;
   white-space: nowrap;
   color: white;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  box-sizing: border-box;
+  line-height: 1;
 }
 
 .priority-chip.lite {

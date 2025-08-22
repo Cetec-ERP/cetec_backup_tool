@@ -380,172 +380,59 @@ app.get("/api/cetec/customer", async (req, res) => {
     if (Array.isArray(responseData)) {
       responseData = responseData.filter(customer => customer.id !== 5165);
     }
-    
-    let enrichedData = responseData;
-    let mysqlStatus = 'disabled';
-    
-    if (isMySQLConfigured && Array.isArray(responseData) && responseData.length > 0) {
-      try {
-        const customersToCheck = responseData.filter(customer => {
-          const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
-          const isItarHosting = customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1;
-          const hasValidDomain = customer.domain && customer.domain.trim() !== '' && customer.domain !== 'undefined';
-          
-          if (!hasValidDomain) return false;
-          
-          if (isItarHosting) return false;
-          
-          if (isResidentHosting) {
-            const hasDB = hasResidentDatabase(customer.domain);
-            return hasDB;
-          }
-          
-          return true;
-        });
-        
-        if (customersToCheck.length > 0) {
-          enrichedData = await enrichCustomerData(customersToCheck);
-          
-          const enrichedMap = new Map();
-          enrichedData.forEach(customer => {
-            enrichedMap.set(customer.id, customer);
-          });
-          
-          enrichedData = responseData.map(customer => {
-            const enriched = enrichedMap.get(customer.id);
-            if (enriched) {
-              return enriched;
-            } else {
-              const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
-              const isItarHosting = customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1;
-              const hasValidDomain = customer.domain && customer.domain.trim() !== '' && customer.domain !== 'undefined';
-              
-              let dbExistsValue;
-              if (!hasValidDomain) {
-                dbExistsValue = 'invalid_domain';
-              } else if (isItarHosting) {
-                dbExistsValue = 'itar_hosting';
-              } else if (isResidentHosting) {
-                if (hasResidentDatabase(customer.domain)) {
-                  dbExistsValue = 'resident_hosting';
-                } else {
-                  dbExistsValue = 'unavailable';
-                }
-              } else {
-                dbExistsValue = 'mysql_disabled';
-              }
-              
-              return { ...customer, database_exists: dbExistsValue };
-            }
-          });
-        } else {
-          enrichedData = responseData.map(customer => {
-            const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
-            const isItarHosting = customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1;
-            const hasValidDomain = customer.domain && customer.domain.trim() !== '' && customer.domain !== 'undefined';
-            
-            let dbExistsValue;
-            if (!hasValidDomain) {
-              dbExistsValue = 'invalid_domain';
-            } else if (isResidentHosting) {
-              dbExistsValue = 'resident_hosting';
-            } else if (isItarHosting) {
-              dbExistsValue = 'itar_hosting';
-            } else {
-              dbExistsValue = 'mysql_disabled';
-            }
-            
-            return { ...customer, database_exists: dbExistsValue };
-          });
-        }
-        
-        mysqlStatus = 'completed';
-      } catch (mysqlError) {
-        console.error('Step 3 failed: MySQL enrichment error:', mysqlError.message);
-        
-        enrichedData = responseData.map(customer => {
-          const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
-          const isItarHosting = customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1;
-          const hasValidDomain = customer.domain && customer.domain.trim() !== '' && customer.domain !== 'undefined';
-          
-          let dbExistsValue;
-          if (!hasValidDomain) {
-            dbExistsValue = 'invalid_domain';
-          } else if (isResidentHosting) {
-            dbExistsValue = 'resident_hosting';
-          } else if (isItarHosting) {
-            dbExistsValue = 'itar_hosting';
-          } else {
-            dbExistsValue = 'mysql_error';
-          }
-          
-          return { ...customer, database_exists: dbExistsValue };
-        });
-        
-        mysqlStatus = 'failed';
-      }
-    } else {
-      enrichedData = responseData.map(customer => {
-        const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
-        const isItarHosting = customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1;
-        const hasValidDomain = customer.domain && customer.domain.trim() !== '' && customer.domain !== 'undefined';
-        
-        let dbExistsValue;
-        if (!hasValidDomain) {
-          dbExistsValue = 'invalid_domain';
-        } else if (isResidentHosting) {
-          dbExistsValue = 'resident_hosting';
-        } else if (isItarHosting) {
-          dbExistsValue = 'itar_hosting';
-        } else {
-          dbExistsValue = 'mysql_disabled';
-        }
-        
-        return { ...customer, database_exists: dbExistsValue };
-      });
+
+    // Simplified enrichment without MySQL queries - just set initial status
+    const enrichedData = responseData.map(customer => {
+      const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
+      const isItarHosting = customer.itar_hosting_bc === true || customer.itar_hosting_bc === 1;
+      const hasValidDomain = customer.domain && customer.domain.trim() !== '' && customer.domain !== 'undefined';
       
-      mysqlStatus = 'skipped';
-    }
+      let dbExistsValue;
+      if (!hasValidDomain) {
+        dbExistsValue = 'invalid_domain';
+      } else if (isItarHosting) {
+        dbExistsValue = 'itar_hosting';
+      } else if (isResidentHosting) {
+        if (hasResidentDatabase(customer.domain)) {
+          dbExistsValue = 'resident_hosting';
+        } else {
+          dbExistsValue = 'unavailable';
+        }
+      } else {
+        // For regular customers, we'll validate the link later instead of MySQL queries
+        dbExistsValue = 'pending_validation';
+      }
+      
+      return { ...customer, database_exists: dbExistsValue };
+    });
 
     const timestampData = await loadTimestampData();
     
-    enrichedData = enrichedData.map(customer => {
+    enrichedData.forEach(customer => {
       const customerIdStr = String(customer.id);
       const timestampInfo = timestampData[customerIdStr] || timestampData[customer.id];
-      
-      return {
-        ...customer,
-        lastPulled: timestampInfo ? timestampInfo.lastPulled : null
-      };
+      customer.lastPulled = timestampInfo ? timestampInfo.lastPulled : null;
     });
 
     const totalCustomers = enrichedData.length;
-    const existingDatabases = enrichedData.filter(customer => customer.database_exists === true).length;
+    const pendingValidation = enrichedData.filter(customer => customer.database_exists === 'pending_validation').length;
     const residentHosting = enrichedData.filter(customer => customer.database_exists === 'resident_hosting').length;
     const itarHosting = enrichedData.filter(customer => customer.database_exists === 'itar_hosting').length;
     const invalidDomains = enrichedData.filter(customer => customer.database_exists === 'invalid_domain').length;
-    const noDatabase = enrichedData.filter(customer => customer.database_exists === false).length;
     
     const result = {
       customers: enrichedData,
       metadata: {
         total_customers: totalCustomers,
-        mysql_status: mysqlStatus,
-        mysql_enabled: isMySQLConfigured,
-        api_url: cetecUrl,
+        mysql_status: 'link_validation_mode',
+        mysql_enabled: false,
         timestamp: new Date().toISOString(),
         summary: {
           total_customers: totalCustomers,
-          existing_databases: existingDatabases,
+          pending_validation: pendingValidation,
           resident_hosting: residentHosting,
           itar_hosting: itarHosting,
-          invalid_domains: invalidDomains,
-          no_database: noDatabase
-        },
-        processing_steps: {
-          api_fetch: 'completed',
-          billing_filter: 'completed',
-          mysql_enrichment: mysqlStatus
+          invalid_domains: invalidDomains
         }
       }
     };
@@ -553,7 +440,11 @@ app.get("/api/cetec/customer", async (req, res) => {
     res.json(result);
     
   } catch (error) {
-    console.error("Error in customer data processing:", error.message);
+    console.error('Error in /api/cetec/customer:', error);
+    res.status(500).json({
+      error: error.message,
+      message: "Failed to fetch customer data"
+    });
   }
 });
 
@@ -691,6 +582,95 @@ app.post("/api/mysql/check", async (req, res) => {
       success: false,
       error: error.message,
       message: "MySQL check failed"
+    });
+  }
+});
+
+app.post("/api/validate-link", async (req, res) => {
+  try {
+    const { domain } = req.body;
+    
+    if (!domain) {
+      return res.status(400).json({ error: "Domain is required" });
+    }
+    
+    // Only log for specific test domains
+    const shouldLog = ['4p', 'ocdlabs', 'bristolmanufacturingllccom'].includes(domain.toLowerCase());
+    
+    // Log for all domains when validation starts
+    console.log(`🌐 [Backend] Received validation request for domain: ${domain}`);
+    
+    const develUrl = `http://${domain}.cetecerpdevel.com/auth/login_new`;
+    // const develUrl = `http://${domain}.cetecerpdevel.com`;
+    if (shouldLog) {
+      console.log(`🌐 [Backend] Validating devel environment URL: ${develUrl}`);
+    }
+    
+    try {
+      // Use a GET request to check if the URL is accessible and follow redirects
+      const response = await axios.get(develUrl, {
+        timeout: 5000, // 5 second timeout for link validation
+        maxRedirects: 5, // Allow redirects to see where they end up
+        validateStatus: (status) => status < 500 // Accept any status < 500 initially
+      });
+      
+      // Check if the final URL after redirects is the main site
+      const finalUrl = response.request.res.responseUrl || response.config.url;
+      const isRedirectedToMainSite = finalUrl.includes('cetecerp.com') && !finalUrl.includes(domain);
+      
+      if (isRedirectedToMainSite) {
+        console.log(`❌ [Backend] FAILED: ${domain} redirects to main site - ${finalUrl}`);
+        if (shouldLog) {
+          console.log(`❌ [Backend] FAILED: ${develUrl} redirects to main site - ${finalUrl}`);
+        }
+        res.json({
+          success: true,
+          domain: domain,
+          url: develUrl,
+          reachable: false,
+          status: response.status,
+          finalUrl: finalUrl,
+          reason: 'redirected_to_main_site'
+        });
+        return;
+      }
+      
+      // If we get here, the domain is valid and not redirected to main site
+      console.log(`✅ [Backend] SUCCESS: ${domain} is reachable (Status: ${response.status}, Final URL: ${finalUrl})`);
+      if (shouldLog) {
+        console.log(`✅ [Backend] SUCCESS: ${develUrl} is reachable (Status: ${response.status}, Final URL: ${finalUrl})`);
+      }
+      res.json({
+        success: true,
+        domain: domain,
+        url: develUrl,
+        reachable: true,
+        status: response.status,
+        finalUrl: finalUrl
+      });
+      
+    } catch (axiosError) {
+      // If axios fails (timeout, network error, etc.), the link is not reachable
+      console.log(`❌ [Backend] FAILED: ${domain} is not reachable - ${axiosError.message}`);
+      if (shouldLog) {
+        console.log(`❌ [Backend] FAILED: ${develUrl} is not reachable - ${axiosError.message}`);
+      }
+      res.json({
+        success: true,
+        domain: domain,
+        url: develUrl,
+        reachable: false,
+        error: axiosError.message,
+        reason: 'network_error'
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error in link validation:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Link validation failed"
     });
   }
 });

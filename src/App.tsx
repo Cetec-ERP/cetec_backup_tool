@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { config } from './config';
 import DataTable from './components/DataTable';
@@ -6,11 +6,43 @@ import SearchAndFilter from './components/SearchAndFilter';
 import DarkModeToggle from './components/DarkModeToggle';
 import './App.css';
 
-function App() {
-  const [data, setData] = useState<any[]>([]);
-  const [filteredData, setFilteredData] = useState<any[]>([]);
+interface Customer {
+  id: string;
+  name: string;
+  domain: string;
+  database_exists: any;
+  itar_hosting_bc?: any;
+  resident_hosting?: any;
+  total_users?: any;
+  ok_to_bill?: any;
+  priority_support?: any;
+  test_environment?: any;
+  lastPulled?: any;
+  validation_status?: string;
+  validation_error?: string;
+  // ... other properties
+}
+
+interface ValidationResult {
+  domain: string;
+  reachable: boolean;
+  status?: number;
+  error?: string;
+  finalUrl?: string;
+  reason?: string;
+}
+
+const App: React.FC = () => {
+  const [data, setData] = useState<Customer[]>([]);
+  const [filteredData, setFilteredData] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPriority, setSelectedPriority] = useState<string>('all');
+  const [hiddenDevelButtons, setHiddenDevelButtons] = useState<Set<string>>(new Set());
+  const [pollingCustomers, setPollingCustomers] = useState<Set<string>>(new Set());
+  const [validationCache, setValidationCache] = useState<Map<string, ValidationResult>>(new Map());
+  const [isValidating, setIsValidating] = useState(false);
 
   const startBackupProcess = async () => {
     setLoading(true);
@@ -18,7 +50,7 @@ function App() {
     
     try {
       const endpoint = 'cetec/customer';
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
       const url = `${apiBaseUrl}/${endpoint}?preshared_token=${config.presharedToken}`;
       
       const response = await axios.get(url, { timeout: 60000 });
@@ -49,6 +81,9 @@ function App() {
       
       setData(sortedCustomers);
       setFilteredData(sortedCustomers);
+      
+      // Batch validate all domains that need validation
+      await batchValidateDomains(sortedCustomers);
       
       setLoading(false);
     } catch (err: any) {
@@ -123,6 +158,125 @@ function App() {
     });
   };
 
+  // Calculate summary statistics including validation results
+  const getSummaryStats = () => {
+    const total = filteredData.length;
+    const residentHosting = filteredData.filter((customer: any) => customer.resident_hosting === true || customer.resident_hosting === 1).length;
+    const itarHosting = filteredData.filter((customer: any) => {
+      const itarValue = customer.itar_hosting_bc;
+      return itarValue === true || itarValue === 1 || 
+             (typeof itarValue === 'string' && itarValue.toLowerCase().includes('itar')) ||
+             (itarValue && itarValue !== '' && itarValue !== 'false' && itarValue !== 0);
+    }).length;
+    
+    // Log summary calculations for debugging
+    console.log(`📊 [Summary Stats] Total: ${total}, Resident: ${residentHosting}, ITAR: ${itarHosting}`);
+             
+    return { total, residentHosting, itarHosting };
+  };
+
+  // Batch validation function to efficiently validate multiple domains at once
+  const batchValidateDomains = useCallback(async (customers: Customer[]) => {
+    // Collect all unique domains that need validation
+    const domainsToValidate = new Set<string>();
+    
+    customers.forEach(customer => {
+      if (customer.domain && 
+          customer.domain.trim() !== '' && 
+          customer.domain !== 'undefined' &&
+          !customer.itar_hosting_bc &&
+          !customer.resident_hosting &&
+          (customer.database_exists === 'pending_validation' || 
+           customer.database_exists === false || 
+           customer.database_exists === 'unavailable' ||
+           customer.database_exists === 'error' ||
+           customer.database_exists === 'validation_error')) {
+        domainsToValidate.add(customer.domain);
+      }
+    });
+
+    // Filter out domains that are already in cache
+    const uncachedDomains = Array.from(domainsToValidate).filter(domain => !validationCache.has(domain));
+    
+    if (uncachedDomains.length === 0) {
+      console.log('🔄 [Batch Validation] All domains already validated, skipping validation');
+      return;
+    }
+
+    console.log(`🔄 [Batch Validation] Starting validation for ${uncachedDomains.length} domains:`, uncachedDomains);
+    setIsValidating(true);
+
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
+      
+      // Validate each domain individually (could be optimized to batch API calls if backend supports it)
+      const validationPromises = uncachedDomains.map(async (domain) => {
+        try {
+          const response = await axios.post(`${apiBaseUrl}/validate-link`, { domain }, { timeout: 10000 });
+          return {
+            domain,
+            reachable: response.data.reachable,
+            status: response.data.status,
+            error: response.data.error,
+            finalUrl: response.data.finalUrl,
+            reason: response.data.reason
+          };
+        } catch (error: any) {
+          console.error(`🚨 [Batch Validation] Failed to validate ${domain}:`, error.message);
+          return {
+            domain,
+            reachable: false,
+            error: error.message,
+            reason: 'api_error'
+          };
+        }
+      });
+
+      const results = await Promise.all(validationPromises);
+      
+      // Update validation cache with new results
+      const newCache = new Map(validationCache);
+      results.forEach(result => {
+        newCache.set(result.domain, result);
+        // Log detailed results for debugging
+        if (result.reachable) {
+          console.log(`✅ [Batch Validation] ${result.domain}: SUCCESS (Status: ${result.status}, Final URL: ${result.finalUrl})`);
+        } else {
+          if (result.reason === 'redirected_to_main_site') {
+            console.log(`❌ [Batch Validation] ${result.domain}: FAILED - Redirects to main site (Final URL: ${result.finalUrl})`);
+          } else {
+            console.log(`❌ [Batch Validation] ${result.domain}: FAILED (Reason: ${result.reason}, Final URL: ${result.finalUrl || 'N/A'})`);
+          }
+        }
+      });
+      
+      setValidationCache(newCache);
+      
+      // Update customer data with validation results
+      setData(prevData => prevData.map(customer => {
+        if (customer.domain && newCache.has(customer.domain)) {
+          const validationResult = newCache.get(customer.domain)!;
+          return {
+            ...customer,
+            database_exists: validationResult.reachable ? true : false,
+            validation_status: validationResult.reachable ? 'valid' : 'invalid',
+            validation_error: validationResult.error,
+            validation_reason: validationResult.reason,
+            final_url: validationResult.finalUrl
+          };
+        }
+        return customer;
+      }));
+
+      console.log(`✅ [Batch Validation] Completed validation for ${results.length} domains`);
+      
+    } catch (error) {
+      console.error('🚨 [Batch Validation] Batch validation failed:', error);
+    } finally {
+      setIsValidating(false);
+    }
+  }, [validationCache]);
+
   return (
     <div className="app-container">
       <div className="header-section">
@@ -158,7 +312,7 @@ function App() {
             </div>
             <div className="loading-overlay">
               <p className='header-text'>
-                Loading customer data and checking databases...
+                Loading customer data...
               </p>
             </div>
           </>
@@ -175,56 +329,63 @@ function App() {
               loading={loading}
             />
           
-              <div className="summary-item">
-                <span className="summary-label">Total:</span>
-                <span className="summary-value">{filteredData.length}</span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Has Backup:</span>
-                <span className="summary-value success">
-                  {filteredData.filter((customer: any) => customer.database_exists === true).length}
-                </span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Resident:</span>
-                <span className="summary-value warning">
-                  {filteredData.filter((customer: any) => customer.resident_hosting === true || customer.resident_hosting === 1).length}
-                </span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">ITAR:</span>
-                <span className="summary-value danger">
-                  {filteredData.filter((customer: any) => {
-                    const itarValue = customer.itar_hosting_bc;
-                    return itarValue === true || itarValue === 1 || 
-                           (typeof itarValue === 'string' && itarValue.toLowerCase().includes('itar')) ||
-                           (itarValue && itarValue !== '' && itarValue !== 'false' && itarValue !== 0);
-                  }).length}
-                </span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Priority Support:</span>
-                <div className="priority-chips">
-                  <span className="priority-chip lite">
-                    {filteredData.filter((customer: any) => {
-                      const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
-                      return prioritySupport === 'lite' || prioritySupport === 'l';
-                    }).length}
-                  </span>
-                  <span className="priority-chip standard">
-                    {filteredData.filter((customer: any) => {
-                      const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
-                      return prioritySupport === 'standard' || prioritySupport === 'std' || prioritySupport === 's';
-                    }).length}
-                  </span>
-                  <span className="priority-chip enterprise">
-                    {filteredData.filter((customer: any) => {
-                      const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
-                      return prioritySupport === 'enterprise' || prioritySupport === 'ent' || prioritySupport === 'e';
-                    }).length}
-                  </span>
-                </div>
-              </div>
+            {filteredData.length > 0 && (() => {
+              const stats = getSummaryStats();
+              return (
+                <>
+                  <div className="summary-item">
+                    <span className="summary-label">Total:</span>
+                    <span className="summary-value">{stats.total}</span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">Resident:</span>
+                    <span className="summary-value warning">
+                      {stats.residentHosting}
+                    </span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">ITAR:</span>
+                    <span className="summary-value danger">
+                      {stats.itarHosting}
+                    </span>
+                  </div>
+                  
+                  {isValidating && (
+                    <div className="summary-item">
+                      <span className="summary-label">Validating:</span>
+                      <span className="summary-value info">
+                        <div className="polling-spinner"></div>
+                        Checking links...
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="summary-item">
+                    <span className="summary-label">Priority Support:</span>
+                    <div className="priority-chips">
+                      <span className="priority-chip lite">
+                        {filteredData.filter((customer: any) => {
+                          const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                          return prioritySupport === 'lite' || prioritySupport === 'l';
+                        }).length}
+                      </span>
+                      <span className="priority-chip standard">
+                        {filteredData.filter((customer: any) => {
+                          const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                          return prioritySupport === 'standard' || prioritySupport === 'std' || prioritySupport === 's';
+                        }).length}
+                      </span>
+                      <span className="priority-chip enterprise">
+                        {filteredData.filter((customer: any) => {
+                          const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                          return prioritySupport === 'enterprise' || prioritySupport === 'ent' || prioritySupport === 'e';
+                        }).length}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </>
         ) : null}
       </div>
@@ -232,13 +393,14 @@ function App() {
       {!loading && !error && data && (
         <DataTable 
           data={filteredData}
-          title={`Customers (with Database Verification)`}
+          title="Customers"
           columns={[
             'id', 'name', 'total_users', 'domain', 'database_exists',
             'ok_to_bill', 'priority_support', 'resident_hosting', 'test_environment', 'itar_hosting_bc'
           ]}
           onTimestampUpdate={handleTimestampUpdate}
           onDatabaseStatusUpdate={handleDatabaseStatusUpdate}
+          validationCache={validationCache}
         />
       )}
     </div>

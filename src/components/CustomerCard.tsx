@@ -1,19 +1,62 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 interface CustomerCardProps {
   item: any;
   hiddenDevelButtons: Set<string>;
   isPolling: boolean;
   onActionClick: (item: any) => void;
+  onDatabaseStatusUpdate?: (customerId: string, databaseExists: any) => void;
+  validationCache?: Map<string, { 
+    reachable: boolean; 
+    status?: number; 
+    error?: string; 
+    finalUrl?: string;
+    reason?: string;
+  }>;
 }
 
 const CustomerCard: React.FC<CustomerCardProps> = ({ 
   item, 
   hiddenDevelButtons, 
   isPolling, 
-  onActionClick
+  onActionClick,
+  onDatabaseStatusUpdate,
+  validationCache
 }) => {
   const techxPassword = import.meta.env.VITE_TECHX_PASSWORD;
+
+  // Get validation status from cache instead of individual validation
+  const getValidationStatus = () => {
+    if (!validationCache || !item.domain) return 'pending';
+    
+    const result = validationCache.get(item.domain);
+    if (!result) return 'pending';
+    
+    if (result.reachable) return 'valid';
+    if (result.reason === 'redirected_to_main_site') return 'redirected';
+    if (result.error || result.reason === 'api_error') return 'error';
+    return 'invalid';
+  };
+
+  const linkValidationStatus = getValidationStatus();
+
+  // Debug: Log initial customer data for specific test domains only
+  useEffect(() => {
+    const shouldLog = ['4p', 'ocdlabs', 'bristolmanufacturingllccom'].includes(item.domain?.toLowerCase());
+    if (shouldLog) {
+      console.log(`🏷️ [CustomerCard] ${item.name} (ID: ${item.id}) - Initial data:`, {
+        domain: item.domain,
+        database_exists: item.database_exists,
+        itar_hosting_bc: item.itar_hosting_bc,
+        resident_hosting: item.resident_hosting,
+        priority_support: item.priority_support,
+        validation_status: linkValidationStatus
+      });
+    }
+  }, [item.id, item.name, item.domain, item.database_exists, item.itar_hosting_bc, item.resident_hosting, item.priority_support, linkValidationStatus]);
+
+  // Remove the old validation logic - no more individual API calls
 
   const normalizePrioritySupport = (value: string): string => {
     if (!value || value === 'undefined' || value === 'null' || value === '0' || value === 'false') {
@@ -129,32 +172,129 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     );
   };
 
-  const renderDevelButton = () => {
+    const renderDevelButton = () => {
     const domain = item.domain;
+    const shouldLog = ['4p', 'ocdlabs', 'bristolmanufacturingllccom'].includes(domain?.toLowerCase());
+    
     if (!domain || domain === 'undefined' || domain.trim() === '') {
+      if (shouldLog) {
+        console.log(`🔍 [Devel Button] No domain for ${item.name} (ID: ${item.id})`);
+      }
       return null;
     }
 
     const isItarHosting = Boolean(item.itar_hosting_bc);
     const isResidentHosting = Boolean(item.resident_hosting);
-    const databaseExists = item.database_exists === true;
     const isDevelButtonHidden = hiddenDevelButtons.has(String(item.id));
     
-    if (isItarHosting || (isResidentHosting && !databaseExists) || !databaseExists || isDevelButtonHidden) {
+    if (shouldLog) {
+      console.log(`🔍 [Devel Button] ${item.name} (${domain}) - database_exists: "${item.database_exists}", itar: ${isItarHosting}, resident: ${isResidentHosting}, validationStatus: ${linkValidationStatus}`);
+    }
+    
+    // Handle different database status values
+    if (isItarHosting) {
+      if (shouldLog) {
+        console.log(`🚫 [Devel Button] ${item.name} - ITAR hosting, no devel button`);
+      }
       return null;
     }
-
-    const customerUrl = `http://${domain}.cetecerpdevel.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
     
-    return (
-      <button
-        className="devel-button"
-        onClick={() => window.open(customerUrl, '_blank', 'noopener,noreferrer')}
-        title="Open Devel Environment"
-      >
-        Devel ↗
-      </button>
-    );
+    if (isResidentHosting) {
+      if (item.database_exists === 'resident_hosting') {
+        if (shouldLog) {
+          console.log(`🚫 [Devel Button] ${item.name} - Resident hosting, no devel button`);
+        }
+        return null; // Resident hosting customers don't get devel buttons
+      } else {
+        if (shouldLog) {
+          console.log(`🚫 [Devel Button] ${item.name} - Unavailable resident hosting, no devel button`);
+        }
+        return null; // Unavailable resident hosting
+      }
+    }
+    
+    // For regular customers, show validation status or devel button
+    // Handle both 'pending_validation' and other values that need validation
+    if (item.database_exists === 'pending_validation' || 
+        item.database_exists === false || 
+        item.database_exists === 'unavailable' ||
+        item.database_exists === 'error' ||
+        item.database_exists === 'validation_error') {
+      if (shouldLog) {
+        console.log(`⏳ [Devel Button] ${item.name} - Needs validation, status: ${linkValidationStatus}`);
+      }
+      if (linkValidationStatus === 'pending') {
+        return (
+          <button className="devel-button pending" disabled>
+            Pending...
+          </button>
+        );
+      } else if (linkValidationStatus === 'valid') {
+        // Show devel button if validation succeeded
+        if (isDevelButtonHidden) {
+          return null;
+        }
+        
+        const customerUrl = `http://${domain}.cetecerpdevel.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+        if (shouldLog) {
+          console.log(`✅ [Devel Button] ${item.name} - Validation successful, showing devel button`);
+        }
+        return (
+          <button
+            className="devel-button"
+            onClick={() => window.open(customerUrl, '_blank', 'noopener,noreferrer')}
+            title="Open Devel Environment"
+          >
+            Devel ↗
+          </button>
+        );
+      } else if (linkValidationStatus === 'invalid') {
+        if (shouldLog) {
+          console.log(`❌ [Devel Button] ${item.name} - Validation failed, showing unreachable button`);
+        }
+        return (
+          <button className="devel-button invalid" disabled title="Devel environment unreachable">
+            Unreachable
+          </button>
+        );
+      } else if (linkValidationStatus === 'redirected') {
+        if (shouldLog) {
+          console.log(`🔄 [Devel Button] ${item.name} - Redirected to main site, no button shown`);
+        }
+        return null; // Don't show any button for redirected domains
+      } else if (linkValidationStatus === 'error') {
+        if (shouldLog) {
+          console.log(`🚨 [Devel Button] ${item.name} - Validation error, showing error button`);
+        }
+        return (
+          <button className="devel-button error" disabled title="Validation error">
+            Error
+          </button>
+        );
+      }
+    }
+    
+    // For customers with existing database status (from previous MySQL checks)
+    if (item.database_exists === true && !isDevelButtonHidden) {
+      const customerUrl = `http://${domain}.cetecerpdevel.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+      if (shouldLog) {
+        console.log(`✅ [Devel Button] ${item.name} - Database exists, showing devel button`);
+      }
+      return (
+        <button
+          className="devel-button"
+          onClick={() => window.open(customerUrl, '_blank', 'noopener,noreferrer')}
+          title="Open Devel Environment"
+        >
+          Devel ↗
+        </button>
+      );
+    }
+    
+    if (shouldLog) {
+      console.log(`🚫 [Devel Button] ${item.name} - No conditions met, no button shown`);
+    }
+    return null;
   };
 
   const renderProductionButton = () => {
