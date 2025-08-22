@@ -17,25 +17,19 @@ function App() {
     setError(null);
     
     try {
-      const endpoint = 'cetec/customer';  // Remove 'api/' prefix
+      const endpoint = 'cetec/customer';
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
       const url = `${apiBaseUrl}/${endpoint}?preshared_token=${config.presharedToken}`;
       
       const response = await axios.get(url, { timeout: 60000 });
       
-      // Add debugging to see what we're actually getting
-      console.log('API Response:', response.data);
-      
       let customersToSort = [];
       
       if (response.data && response.data.customers && Array.isArray(response.data.customers)) {
-        // Expected format: { customers: [...] }
         customersToSort = response.data.customers;
       } else if (response.data && Array.isArray(response.data)) {
-        // Direct array format: [...]
         customersToSort = response.data;
       } else {
-        // Unexpected data format
         console.error('Unexpected API response format:', response.data);
         throw new Error('API returned unexpected data format');
       }
