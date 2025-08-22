@@ -33,7 +33,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
         }
         
         // Check database status
-        const mysqlCheckResponse = await fetch('http://backups.cetecerpdevel.com:5001/api/mysql/check', {
+        const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+        const mysqlCheckResponse = await fetch(`${apiBaseUrl}/api/mysql/check`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -106,7 +107,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
     try {
       setPollingCustomers(prev => new Set(prev).add(String(item.id)));
       
-      const timestampResponse = await fetch('http://backups.cetecerpdevel.com:5001/api/pull/record', {
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const timestampResponse = await fetch(`${apiBaseUrl}/api/pull/record`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -136,7 +138,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
           return;
         }
         
-        const backupApiUrl = `http://backups.cetecerpdevel.com:5001/api/backup/request`;
+        const backupApiUrl = `${apiBaseUrl}/api/backup/request`;
         
         fetch(backupApiUrl, {
           method: 'POST',

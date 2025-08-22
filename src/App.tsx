@@ -18,7 +18,8 @@ function App() {
     
     try {
       const endpoint = 'api/cetec/customer';
-      const url = `http://backups.cetecerpdevel.com:5001/${endpoint}?preshared_token=${config.presharedToken}`;
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const url = `${apiBaseUrl}/${endpoint}?preshared_token=${config.presharedToken}`;
       
       const response = await axios.get(url, { timeout: 60000 });
       

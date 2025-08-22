@@ -20,32 +20,25 @@ cd cetec_backup_puller
 npm install
 ```
 
-## ⚙️ Step 2: Environment Configuration
+## Environment Setup
 
-1. **Copy the environment template**:
-   ```bash
-   cp server.env.example .env
-   ```
+### 1. Create Environment Files
 
-2. **Edit `.env` with your actual values**:
-   ```bash
-   # CETEC ERP API Configuration
-   API_URL=https://yourdomain.cetecerp.com
-   VITE_CETEC_DOMAIN=yourdomain.cetecerp.com
-   VITE_PRESHARED_TOKEN=your_actual_token_here
-   VITE_API_PROTOCOL=https
-   
-   # MySQL Database Configuration
-   MYSQL_HOST=your_mysql_host
-   MYSQL_USER=your_mysql_username
-   MYSQL_PASSWORD=your_mysql_password
-   MYSQL_PORT=3306
-   ```
+**Local Development (.env):**
+```bash
+VITE_API_URL=http://localhost:5001
+VITE_CETEC_DOMAIN=yourdomain.cetecerp.com
+VITE_PRESHARED_TOKEN=your_actual_token_here
+VITE_API_PROTOCOL=https
+```
 
-3. **Replace the placeholder values**:
-   - `yourdomain.cetecerp.com` → Your actual CETEC ERP domain
-   - `your_actual_token_here` → Your actual preshared token
-   - MySQL credentials → Your database connection details
+**Production Server (.env):**
+```bash
+VITE_API_URL=http://backups.cetecerpdevel.com:5001
+VITE_CETEC_DOMAIN=yourdomain.cetecerp.com
+VITE_PRESHARED_TOKEN=your_actual_token_here
+VITE_API_PROTOCOL=https
+```
 
 ## 🚀 Step 3: Start the Application
 

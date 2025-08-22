@@ -66,23 +66,30 @@ Create a `.env` file in your project root:
 # ========================================
 # Copy server.env.example to .env and fill in your values:
 
-# Backend Configuration
-PORT=5001                    # Backend server port
-API_URL=https://internal.cetecerp.com  # CETEC ERP API base URL
+## Environment Variables
 
-# Frontend Configuration  
+### Frontend Configuration
+```bash
+# API Configuration
+VITE_API_URL=http://backups.cetecerpdevel.com:5001  # Frontend API proxy target
 VITE_CETEC_DOMAIN=internal.cetecerp.com
 VITE_PRESHARED_TOKEN=your_token_here
 VITE_API_PROTOCOL=https
+```
+
+### Backend Configuration
+```bash
+# Server Configuration
+NODE_ENV=production
+PORT=5001
+API_URL=https://internal.cetecerp.com
 
 # MySQL Configuration
 MYSQL_HOST=your_mysql_host
-MYSQL_USER=your_mysql_user  
+MYSQL_USER=your_mysql_user
 MYSQL_PASSWORD=your_mysql_password
 MYSQL_PORT=3306
-
-# Optional: Cloud SQL Proxy (for development)
-MYSQL_SOCKET=/tmp/cloudsql/your-project:your-region:your-instance
+MYSQL_SOCKET=/path/to/cloudsql/socket
 ```
 
 ### MySQL Setup

@@ -22,6 +22,7 @@ Create a `.env` file in your project root:
 API_URL=https://yourdomain.cetecerp.com
 
 # Frontend Configuration (Vite will use these)
+VITE_API_URL=http://backups.cetecerpdevel.com:5001  # Frontend API proxy target
 VITE_CETEC_DOMAIN=yourdomain.cetecerp.com
 VITE_PRESHARED_TOKEN=your_actual_token_here
 VITE_API_PROTOCOL=https
