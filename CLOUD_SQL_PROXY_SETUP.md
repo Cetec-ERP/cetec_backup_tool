@@ -62,7 +62,7 @@ cloud-sql-proxy --unix-socket /tmp/cloudsql your-project:your-region:your-instan
 
 ### 2. Test the Connection
 ```bash
-curl http://localhost:5001/api/test-mysql
+curl http://backups.cetecerpdevel.com:5001/api/test-mysql
 ```
 
 You should see:

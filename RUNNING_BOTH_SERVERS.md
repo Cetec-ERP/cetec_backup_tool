@@ -31,7 +31,7 @@ All options will start both the frontend (Vite) and backend (Express) servers.
 ```bash
 npm run dev
 ```
-- Runs on: http://localhost:5002
+- Runs on: http://backups.cetecerpdevel.com:5002
 - Hot reload enabled
 - React development server
 
@@ -39,7 +39,7 @@ npm run dev
 ```bash
 npm run server
 ```
-- Runs on: http://localhost:5001
+- Runs on: http://backups.cetecerpdevel.com:5001
 - CETEC API proxy with MySQL integration
 - Customer data enrichment and backup management
 
@@ -191,7 +191,7 @@ The backend automatically checks if a MySQL database exists for each customer's 
 
 3. **CORS Errors**
    - Ensure backend is running on port 5001
-   - Check that frontend is making requests to `http://localhost:5001`
+   - Check that frontend is making requests to `http://backups.cetecerpdevel.com:5001`
    - Verify CORS headers are properly set
 
 4. **Environment Variables Not Loading**
@@ -221,7 +221,7 @@ lsof -i :5002  # Frontend
 The backend provides detailed error information through the `/api/test-mysql` endpoint:
 
 ```bash
-curl http://localhost:5001/api/test-mysql
+curl http://backups.cetecerpdevel.com:5001/api/test-mysql
 ```
 
 This will show:
