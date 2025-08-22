@@ -64,7 +64,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     }
     
     return (
-      <span className={`priority-badge ${normalizedValue.toLowerCase()}`}>
+      <span className={`priority-chip ${normalizedValue.toLowerCase()}`}>
         {normalizedValue}
       </span>
     );
@@ -108,12 +108,12 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           onClick={() => onActionClick(item)}
           title="Re-pull backup"
         >
-          <svg className="refresh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12a9 9 0 0 1 9-9 9.75 9 0 0 1 6.74 2.74L21 8"/>
-            <path d="M21 3v5h-5"/>
-            <path d="M21 12a9 9 0 0 1-9 9 9.75 9 0 0 1-6.74-2.74L3 16"/>
-            <path d="M3 21v-5h5"/>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="button-icon">
+            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+            <polyline points="12,15 12,8"/>
+            <polyline points="9,12 12,15 15,12"/>
           </svg>
+          Pull Again
         </button>
       );
     }
@@ -123,6 +123,11 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         className="action-button primary"
         onClick={() => onActionClick(item)}
       >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="button-icon">
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+          <polyline points="12,15 12,8"/>
+          <polyline points="9,12 12,15 15,12"/>
+        </svg>
         Pull Backup
       </button>
     );
@@ -281,7 +286,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         <div className="card-actions">
           <div className="timestamp-display">
             {isUnavailableForBackups() ? (
-              <span className="unavailable-text">Unavailable</span>
+              <span className="unavailable-text">Backup Unavailable</span>
             ) : item.lastPulled ? (
               <span className="timestamp-text">
                 {new Date(item.lastPulled).toLocaleDateString()}

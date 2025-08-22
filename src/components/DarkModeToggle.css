@@ -1,0 +1,65 @@
+.dark-mode-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: var(--toggle-bg, #f8f9fa);
+  border: 1px solid var(--toggle-border, #e9ecef);
+  border-radius: 8px;
+  color: var(--toggle-text, #333);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 40px;
+  height: 40px;
+}
+
+.dark-mode-toggle:hover {
+  background: var(--toggle-hover-bg, #e9ecef);
+  border-color: var(--toggle-hover-border, #dee2e6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dark-mode-toggle:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode-toggle:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--toggle-focus-ring, rgba(13, 110, 253, 0.25));
+}
+
+.toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--toggle-icon-color, #6c757d);
+}
+
+
+
+/* Dark mode specific styles */
+.dark-mode .dark-mode-toggle {
+  --toggle-bg: #343a40;
+  --toggle-border: #495057;
+  --toggle-text: #f8f9fa;
+  --toggle-hover-bg: #495057;
+  --toggle-hover-border: #6c757d;
+  --toggle-focus-ring: rgba(248, 249, 250, 0.25);
+  --toggle-icon-color: #adb5bd;
+}
+
+/* Light mode specific styles */
+.dark-mode-toggle {
+  --toggle-bg: #f8f9fa;
+  --toggle-border: #e9ecef;
+  --toggle-text: #333;
+  --toggle-hover-bg: #e9ecef;
+  --toggle-hover-border: #dee2e6;
+  --toggle-focus-ring: rgba(13, 110, 253, 0.25);
+  --toggle-icon-color: #6c757d;
+}
