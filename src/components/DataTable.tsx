@@ -104,6 +104,11 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
       return;
     }
     
+    // ITAR hosting customers cannot pull backups
+    if (item.itar_hosting_bc) {
+      return;
+    }
+    
     try {
       setPollingCustomers(prev => new Set(prev).add(String(item.id)));
       
@@ -130,6 +135,11 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
       const handleBackupRequest = async () => {
         const domain = item.domain;
         if (!domain) {
+          return;
+        }
+        
+        // ITAR hosting customers cannot pull backups
+        if (item.itar_hosting_bc) {
           return;
         }
         
