@@ -4,9 +4,11 @@ import residentDBsConfig from '../config/resident-dbs.json';
 interface SearchAndFilterProps {
   data: any[];
   onFilterChange: (filteredData: any[]) => void;
+  onRefresh: () => void;
+  loading: boolean;
 }
 
-const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange }) => {
+const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange, onRefresh, loading }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<Record<string, string>>({
     priority_support: '',
@@ -224,6 +226,14 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange 
             ref={buttonRef}
           >
             {showFilters ? 'Hide Filters' : 'Filters'}
+          </button>
+          
+          <button 
+            className="refresh-button"
+            onClick={onRefresh}
+            disabled={loading}
+          >
+            {loading ? 'Loading...' : 'Refresh Data'}
           </button>
           
           {showFilters && (

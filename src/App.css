@@ -77,7 +77,6 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-  padding: 0 20px;
 }
 
 .app-header {
@@ -271,7 +270,6 @@ body {
 
 /* Search Section */
 .search-section {
-  margin-bottom: 20px;
   display: flex;
   align-items: baseline; /* Change to baseline for better text alignment */
   gap: 16px;
@@ -327,7 +325,6 @@ body {
   transition: all 0.2s ease;
   min-width: 140px;
   box-shadow: none;
-  margin-left: 24px;
   height: 38px;
   box-sizing: border-box;
   display: flex;
@@ -356,6 +353,9 @@ body {
 /* Filter Button Container for Modal Positioning */
 .filter-button-container {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Filter Modal */
@@ -601,7 +601,7 @@ body {
   gap: 24px;
   max-width: 1800px;
   padding: 0 20px;
-  width: 100%;
+  /* width: 100%; */
   min-width: 0;
 
   position: relative;
@@ -785,13 +785,7 @@ body {
   white-space: nowrap;
 }
 
-/* Refresh Section */
-.refresh-section {
-  display: flex;
-  align-items: center;
-  margin: 0;
-  padding: 0;
-}
+
 
 .refresh-button {
   background: var(--accent-primary);
@@ -861,19 +855,14 @@ body {
   border-bottom: 1px solid var(--border-color);
   padding: 20px;
   transition: background-color 0.2s ease;
-  width: 100%;
 }
 
 .customer-card:last-child {
   border-bottom: none;
 }
 
-.customer-card:nth-child(even) {
-  background: var(--bg-tertiary);
-}
-
 .customer-card:hover {
-  background: var(--bg-tertiary);
+  background: var(--hover-color);
 }
 
 /* Card Header */
@@ -890,9 +879,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 0 0 50%;
+  flex: 0 0 40%;
   max-width: 40%;
   min-width: 0;
+  order: 1;
 }
 
 .customer-name {
@@ -948,8 +938,12 @@ body {
   align-items: center;
   flex-shrink: 0;
   min-height: 60px;
-  width: auto;
+  width: 120px;
   border-radius: 8px;
+  align-self: flex-start;
+  margin-top: 0;
+  flex: 0 0 120px;
+  order: 2;
 }
 
 
@@ -1000,6 +994,7 @@ body {
   max-width: none;
   position: relative;
   z-index: 1;
+  order: 3;
 }
 
 .timestamp-display {

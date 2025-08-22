@@ -163,17 +163,9 @@ function App() {
             <SearchAndFilter 
               data={data} 
               onFilterChange={setFilteredData}
+              onRefresh={startBackupProcess}
+              loading={loading}
             />
-            
-            <div className="refresh-section">
-              <button 
-                className="refresh-button"
-                onClick={startBackupProcess}
-                disabled={loading}
-              >
-                {loading ? 'Loading...' : 'Refresh Data'}
-              </button>
-            </div>
           
               <div className="summary-item">
                 <span className="summary-label">Total:</span>
