@@ -1,6 +1,4 @@
 import { AppConfig, getConfigValue } from './app-config.types';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 
 // Default configuration fallback
 const defaultConfig: AppConfig = {

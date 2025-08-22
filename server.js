@@ -34,29 +34,13 @@ const mysqlConfig = {
   
   ...(process.env.NODE_ENV === 'development' && process.env.MYSQL_SOCKET ? {
     connectTimeout: 10000,
-    acquireTimeout: 10000,
-    acquireTimeoutMillis: 10000,
-    createTimeoutMillis: 10000,
-    destroyTimeoutMillis: 5000,
-    idleTimeoutMillis: 30000,
-    reapIntervalMillis: 1000,
-    createRetryIntervalMillis: 200,
-    max: 10,
-    min: 2,
+    connectionLimit: 10,
     multipleStatements: false,
     dateStrings: true,
     charset: 'utf8mb4',
   } : {
     connectTimeout: 60000,
-    acquireTimeout: 60000,
-    acquireTimeoutMillis: 60000,
-    createTimeoutMillis: 60000,
-    destroyTimeoutMillis: 10000,
-    idleTimeoutMillis: 60000,
-    reapIntervalMillis: 1000,
-    createRetryIntervalMillis: 1000,
-    max: 5,
-    min: 1,
+    connectionLimit: 5,
     ssl: false,
     multipleStatements: false,
     dateStrings: true,
@@ -74,9 +58,9 @@ async function loadResidentDBsConfig() {
     const configPath = path.join(__dirname, 'src', 'config', 'resident-dbs.json');
     const configData = await fs.readFile(configPath, 'utf8');
     residentDBsConfig = JSON.parse(configData);
-    console.log(`Resident DBs configuration loaded: ${Object.keys(residentDBsConfig).length} mappings`);
+
   } catch (error) {
-    console.warn('Warning: Could not load resident DBs configuration:', error.message);
+    console.warn('[CONFIG] Could not load resident DBs configuration:', error.message);
     residentDBsConfig = {};
   }
 }
@@ -157,7 +141,7 @@ async function initializeMySQLPool() {
     const testConnection = await mysqlPool.getConnection();
     testConnection.release();
   } catch (error) {
-    console.error('Failed to initialize MySQL pool:', error.message);
+    console.error('[MYSQL] Failed to initialize MySQL pool:', error.message);
     mysqlPool = null;
   }
 }
@@ -618,21 +602,16 @@ app.post("/api/backup/request", async (req, res) => {
     
     const backupApiUrl = `http://dev.cetecerpdevel.com:3399/getbackup?password=${process.env.TECHX_PASSWORD}&dbname=${encodeURIComponent(dbname)}`;
     
-    console.log(`🚀 [BACKEND] Sending backup request to external API for database: ${dbname}`);
-    
-    // Create AbortController for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log(`⏰ [BACKEND] External backup API timeout for ${dbname} after 45 seconds`);
       controller.abort();
-    }, 45000); // 45 second timeout for external API
+    }, 45000);
     
     const backupResponse = await fetch(backupApiUrl, {
       signal: controller.signal
     });
     
     clearTimeout(timeoutId);
-    console.log(`📡 [BACKEND] External backup API response for ${dbname}: ${backupResponse.status}`);
     
     if (!backupResponse.ok) {
       throw new Error(`Backup request failed: ${backupResponse.status}`);
@@ -648,7 +627,6 @@ app.post("/api/backup/request", async (req, res) => {
     
   } catch (error) {
     if (error.name === 'AbortError') {
-      console.log(`⏰ [BACKEND] Backup request timed out for ${req.body.dbname || 'unknown'} after 45 seconds`);
       res.status(408).json({
         success: false,
         error: "Request timeout",
