@@ -5,12 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local": "vite --config vite.config.local.ts",
+    "dev:prod": "vite --config vite.config.prod.ts",
     "server": "node server.js",
     "dev:full": "concurrently --kill-others --prefix-colors \"bgBlue.bold,bgGreen.bold\" --names \"BACKEND,FRONTEND\" \"node server.js\" \"npm run dev\"",
     "dev:full:clean": "concurrently --kill-others --prefix-colors \"bgBlue.bold,bgGreen.bold\" --names \"BACKEND,FRONTEND\" \"npm run server\" \"npm run dev\"",
+    "dev:full:local": "concurrently --kill-others --prefix-colors \"bgBlue.bold,bgGreen.bold\" --names \"BACKEND,FRONTEND\" \"node server.js\" \"npm run dev:local\"",
     "dev:custom": "node start-dev.js",
     "kill:ports": "kill-port 5001 5002",
     "build": "tsc -b && vite build",
+    "build:local": "tsc -b && vite build --config vite.config.local.ts",
+    "build:prod": "tsc -b && vite build --config vite.config.prod.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },

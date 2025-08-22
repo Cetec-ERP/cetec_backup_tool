@@ -51,9 +51,16 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   };
 
   const isUnavailableForBackups = (): boolean => {
+    // ITAR hosting customers cannot pull backups
+    if (item.itar_hosting_bc) {
+      return true;
+    }
+    
+    // Resident hosting customers with unavailable database cannot pull backups
     if (item.resident_hosting && item.database_exists === 'unavailable') {
       return true;
     }
+    
     return false;
   };
 
