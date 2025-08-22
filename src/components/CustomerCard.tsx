@@ -75,11 +75,13 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
 
 
   const renderActions = () => {
+    console.log(`[DEBUG] renderActions for ${item.name}: isPolling=${isPolling}, database_exists=${item.database_exists}, lastPulled=${item.lastPulled}`);
+    
     if (isUnavailableForBackups()) {
       return null;
     }
     
-    // If polling is active, show disabled "Pulling..." button
+    // If polling is active, show disabled "Pulling..." button with spinner
     if (isPolling) {
       if (item.database_exists === true && item.lastPulled) {
         return (
@@ -88,11 +90,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
             disabled
             title="Backup in progress..."
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="button-icon">
-              <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
-              <polyline points="12,15 12,8"/>
-              <polyline points="9,12 12,15 15,12"/>
-            </svg>
+            <div className="polling-spinner"></div>
             Pulling...
           </button>
         );
@@ -104,11 +102,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           disabled
           title="Backup in progress..."
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="button-icon">
-            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
-            <polyline points="12,15 12,8"/>
-            <polyline points="9,12 12,15 15,12"/>
-          </svg>
+          <div className="polling-spinner"></div>
           Pulling...
         </button>
       );
@@ -315,12 +309,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
             {renderDevelButton()}
             {renderProductionButton()}
             {renderTestButton()}
-            {isPolling && (
-              <div className="polling-indicator">
-                <div className="polling-spinner"></div>
-                <span className="polling-text">Checking database...</span>
-              </div>
-            )}
+
           </div>
         </div>
       </div>

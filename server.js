@@ -593,6 +593,9 @@ app.post("/api/pull/record", async (req, res) => {
 });
 
 app.post("/api/backup/request", async (req, res) => {
+  const timestamp = new Date().toISOString();
+  const requestId = Math.random().toString(36).substr(2, 9);
+  console.log(`[BACKEND] Backup request received for database: ${req.body.dbname} at ${timestamp} - Request ID: ${requestId}`);
   try {
     const { dbname } = req.body;
     
