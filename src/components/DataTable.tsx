@@ -18,15 +18,12 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
     const pollInterval = 60 * 1000; // 1 minute
     const startTime = Date.now();
     
-    console.log(`🕐 [POLLING] Starting database polling for ${item.name} (${dbName}), checking every ${pollInterval/1000} seconds...`);
-    
-    // Customer should already be in polling set from handleActionClick
+
     
     const pollDatabase = async () => {
       try {
         // Check if we've exceeded maximum polling time
         if (Date.now() - startTime > maxPollingTime) {
-          console.log(`⏰ [POLLING] Timeout reached for ${item.name} (${dbName}) after ${maxPollingTime/60000} minutes`);
           setPollingCustomers(prev => {
             const newSet = new Set(prev);
             newSet.delete(String(item.id));
@@ -36,7 +33,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
         }
         
         // Check database status
-        console.log(`🔍 [POLLING] Checking database status for ${item.name} (${dbName})...`);
         const mysqlCheckResponse = await fetch('http://localhost:3001/api/mysql/check', {
           method: 'POST',
           headers: {
@@ -55,15 +51,12 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
 
           if (mysqlResult.success) {
             const databaseExists = mysqlResult.databaseExists;
-            console.log(`📊 [POLLING] Database status for ${item.name} (${dbName}): ${databaseExists}`);
 
             if (onDatabaseStatusUpdate) {
               onDatabaseStatusUpdate(item.id, databaseExists);
             }
 
-            // If database is now available, show devel button and stop polling
             if (databaseExists !== 'unavailable' && databaseExists !== false) {
-              console.log(`🎉 [POLLING] Database found! Stopping polling for ${item.name} (${dbName})`);
               setHiddenDevelButtons(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(String(item.id));
@@ -74,9 +67,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
                 newSet.delete(String(item.id));
                 return newSet;
               });
-              return; // Stop polling
-            } else {
-              console.log(`⏳ [POLLING] Database not ready yet for ${item.name} (${dbName}), will check again in ${pollInterval/1000} seconds...`);
+              return;
             }
           }
         }
@@ -85,15 +76,11 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
         setTimeout(pollDatabase, pollInterval);
         
       } catch (error) {
-        console.log(`❌ [POLLING] Error checking database for ${item.name} (${dbName}):`, error);
         console.error(`Database polling error for ${item.name} (${dbName}):`, error);
-        // Continue polling even if there's an error
         setTimeout(pollDatabase, pollInterval);
       }
     };
     
-    // Start the first poll after a short delay
-    console.log(`⏰ [POLLING] First database check for ${item.name} (${dbName}) scheduled in ${pollInterval/1000} seconds`);
     setTimeout(pollDatabase, pollInterval);
   };
 
@@ -103,8 +90,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
 
   const handleActionClick = async (item: any) => {
     try {
-      // Immediately set polling state to show "Pulling..." button
-      console.log(`🔄 [POLLING] Starting backup process for ${item.name} (ID: ${item.id})`);
       setPollingCustomers(prev => new Set(prev).add(String(item.id)));
       
       const timestampResponse = await fetch('http://localhost:3001/api/pull/record', {
@@ -132,16 +117,13 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
           return;
         }
         
-        let dbName = domain;
+        const dbName = domain;
         if (item.resident_hosting && item.database_exists === 'unavailable') {
           return;
         }
         
         const backupApiUrl = `http://localhost:3001/api/backup/request`;
         
-        console.log(`🚀 [BACKUP] Sending backup request for ${item.name} (${dbName})...`);
-        
-        // Send backup request but don't wait for response - proceed directly to polling
         fetch(backupApiUrl, {
           method: 'POST',
           headers: {
@@ -149,27 +131,20 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
           },
           body: JSON.stringify({ dbname: dbName })
         }).then(response => {
-          if (response.ok) {
-            console.log(`✅ [BACKUP] Backup request response received for ${item.name}: ${response.status}`);
-          } else {
-            console.log(`⚠️ [BACKUP] Backup request returned error for ${item.name}: ${response.status}`);
+          if (!response.ok) {
+            console.error(`Backup request failed for ${item.name}: ${response.status}`);
           }
         }).catch(error => {
-          console.log(`❌ [BACKUP] Backup request error for ${item.name}:`, error);
+          console.error(`Backup request error for ${item.name}:`, error);
         });
         
-        console.log(`🔄 [POLLING] Starting database polling immediately for ${item.name} (${dbName})...`);
-        
-        // Start polling immediately without waiting for backup response
         startDatabasePolling(item, dbName);
       };
       
       handleBackupRequest();
       
     } catch (error) {
-      console.log(`❌ [POLLING] General error for ${item.name}, removing from polling:`, error);
       console.error('Error in backup process:', error);
-      // Remove from polling set if there was an error
       setPollingCustomers(prev => {
         const newSet = new Set(prev);
         newSet.delete(String(item.id));

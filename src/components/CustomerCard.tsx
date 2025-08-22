@@ -72,31 +72,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     );
   };
 
-  const renderDatabaseStatus = () => {
-    const domain = item.domain;
-    if (!domain || domain === 'undefined' || domain.trim() === '') {
-      return <span className="status-badge unavailable">No Domain</span>;
-    }
 
-    const isItarHosting = Boolean(item.itar_hosting_bc);
-    const isResidentHosting = Boolean(item.resident_hosting);
-    const databaseExists = item.database_exists === true;
-    const isDevelButtonHidden = hiddenDevelButtons.has(String(item.id));
-    
-    if (isItarHosting) {
-      return <span className="status-badge itar">ITAR Hosting</span>;
-    }
-    
-    if (isResidentHosting && !databaseExists) {
-      return <span className="status-badge resident">Resident Hosting</span>;
-    }
-    
-    if (!databaseExists) {
-      return <span className="status-badge no-database">No Database</span>;
-    }
-    
-    return <span className="status-badge has-database">Has Database</span>;
-  };
 
   const renderActions = () => {
     if (isUnavailableForBackups()) {

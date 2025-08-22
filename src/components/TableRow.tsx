@@ -101,7 +101,7 @@ const TableRow: React.FC<TableRowProps> = ({
         );
       }
 
-      let customerUrl = `http://${domain}.cetecerpdevel.com`;
+      const customerUrl = `http://${domain}.cetecerpdevel.com`;
 
       return (
         <td key={key} className="table-cell">

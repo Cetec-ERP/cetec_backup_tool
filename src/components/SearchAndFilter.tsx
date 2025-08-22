@@ -168,9 +168,9 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange,
             const itemValue = item[column];
             
             if (filterValue === true) {
-              return Boolean(itemValue);
+              return itemValue;
             } else if (filterValue === false) {
-              return !Boolean(itemValue);
+              return !itemValue;
             }
             return true;
           } else if (column === 'test_environment') {
@@ -359,7 +359,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange,
 
                 <div className="filter-actions">
                   <button onClick={clearAllFilters} className="clear-filters-btn" disabled={!hasActiveFilters}>
-                    🗑️ Clear Filters
+                    Clear Filters
                   </button>
                 </div>
               </div>
