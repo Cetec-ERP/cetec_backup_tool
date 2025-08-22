@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     port: 5002,
     proxy: {
-      '/api': 'http://backups.cetecerpdevel.com:5001',
+      '/api': 'http://backups.cetecerpdevel.com:8080',
     },
   },
 })
