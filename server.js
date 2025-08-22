@@ -257,7 +257,7 @@ async function enrichCustomerData(customers) {
 }
 
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:5002");
+  res.header("Access-Control-Allow-Origin", "http://backups.cetecerpdevel.com:5002");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
   if (req.method === "OPTIONS") {
@@ -696,7 +696,7 @@ app.post("/api/mysql/check", async (req, res) => {
 });
 
 app.listen(port, async () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server running at http://backups.cetecerpdevel.com:${port}`);
   
   if (isMySQLConfigured) {
     await initializeMySQLPool();
