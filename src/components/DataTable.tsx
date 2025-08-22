@@ -14,7 +14,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
   const [pollingCustomers, setPollingCustomers] = useState<Set<string>>(new Set());
 
   const startDatabasePolling = async (item: any, dbName: string) => {
-    console.log(`[DEBUG] startDatabasePolling called for ${item.name} (${dbName})`);
     const maxPollingTime = 30 * 60 * 1000; // 30 minutes maximum
     const pollInterval = 60 * 1000; // 1 minute
     const startTime = Date.now();
@@ -50,25 +49,21 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
         if (mysqlCheckResponse.ok) {
           const mysqlResult = await mysqlCheckResponse.json();
 
-                      if (mysqlResult.success) {
-              const databaseExists = mysqlResult.databaseExists;
-              const timeSinceStart = Date.now() - startTime;
-              
-              console.log(`[DEBUG] Database check for ${item.name} (${dbName}): ${databaseExists} after ${Math.round(timeSinceStart/1000)}s`);
+          if (mysqlResult.success) {
+            const databaseExists = mysqlResult.databaseExists;
+            const timeSinceStart = Date.now() - startTime;
 
-              if (onDatabaseStatusUpdate) {
-                onDatabaseStatusUpdate(item.id, databaseExists);
-              }
+            if (onDatabaseStatusUpdate) {
+              onDatabaseStatusUpdate(item.id, databaseExists);
+            }
 
             if (databaseExists !== 'unavailable' && databaseExists !== false) {
               // Database exists, but let's continue polling for a bit to ensure it's stable
               // This handles cases where the external backup service might drop/recreate the database
               const stableTime = 2 * 60 * 1000; // 2 minutes of stability
-              const timeSinceStart = Date.now() - startTime;
               
               if (timeSinceStart > stableTime) {
                 // Database has been stable for 2 minutes, stop polling
-                console.log(`[DEBUG] Database stable for ${item.name} (${dbName}) after ${Math.round(timeSinceStart/1000)}s, stopping polling`);
                 setHiddenDevelButtons(prev => {
                   const newSet = new Set(prev);
                   newSet.delete(String(item.id));
@@ -103,18 +98,12 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
   }
 
   const handleActionClick = useCallback(async (item: any) => {
-    const timestamp = new Date().toISOString();
-    const callId = Math.random().toString(36).substr(2, 9);
-    console.log(`[DEBUG] handleActionClick called for ${item.name} (ID: ${item.id}) at ${timestamp} - Call ID: ${callId}`);
-    
     // Check if already polling to prevent duplicate calls
     if (pollingCustomers.has(String(item.id))) {
-      console.log(`[DEBUG] Already polling for ${item.name} (ID: ${item.id}), ignoring duplicate click - Call ID: ${callId}`);
       return;
     }
     
     try {
-      console.log(`[DEBUG] Setting polling state for ${item.name} (ID: ${item.id}) - Call ID: ${callId}`);
       setPollingCustomers(prev => new Set(prev).add(String(item.id)));
       
       const timestampResponse = await fetch('http://localhost:3001/api/pull/record', {
@@ -149,10 +138,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
         
         const backupApiUrl = `http://localhost:3001/api/backup/request`;
         
-        const requestTimestamp = new Date().toISOString();
-        const requestId = Math.random().toString(36).substr(2, 9);
-        console.log(`[DEBUG] Sending backup request for ${item.name} (${dbName}) at ${requestTimestamp} - Request ID: ${requestId}, Call ID: ${callId}`);
-        
         fetch(backupApiUrl, {
           method: 'POST',
           headers: {
@@ -160,7 +145,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
           },
           body: JSON.stringify({ dbname: dbName })
         }).then(response => {
-          console.log(`[DEBUG] Backup response received for ${item.name}: ${response.status} - Request ID: ${requestId}`);
           if (!response.ok) {
             console.error(`Backup request failed for ${item.name}: ${response.status}`);
           }
@@ -168,7 +152,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
           console.error(`Backup request error for ${item.name}:`, error);
         });
         
-        console.log(`[DEBUG] Starting database polling for ${item.name} (${dbName}) - Request ID: ${requestId}`);
         startDatabasePolling(item, dbName);
       };
       

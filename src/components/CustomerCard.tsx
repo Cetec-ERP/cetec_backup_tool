@@ -13,8 +13,10 @@ interface CustomerCardProps {
 const CustomerCard: React.FC<CustomerCardProps> = ({ 
   item, 
   hiddenDevelButtons, 
-  isPolling,
-  onActionClick 
+  isPolling, 
+  onActionClick,
+  onTimestampUpdate,
+  onDatabaseStatusUpdate 
 }) => {
   const techxPassword = import.meta.env.VITE_TECHX_PASSWORD;
 
@@ -23,25 +25,13 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       return false;
     }
     
-    const hasDB = domain.toLowerCase() in residentDBsConfig || 
-           Object.keys(residentDBsConfig).some(key => key.toLowerCase() === domain.toLowerCase());
-    
-    return hasDB;
+    return domain in residentDBsConfig;
   };
 
   const isUnavailableForBackups = (): boolean => {
-    const isItarHosting = Boolean(item.itar_hosting_bc);
-    const isResidentHosting = Boolean(item.resident_hosting);
-    const domain = item.domain;
-    
-    if (isItarHosting) {
+    if (item.resident_hosting && item.database_exists === 'unavailable') {
       return true;
     }
-    
-    if (isResidentHosting && domain) {
-      return !hasResidentDatabase(domain);
-    }
-    
     return false;
   };
 
@@ -72,11 +62,32 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     );
   };
 
-
+  const formatTimestamp = (timestamp: string | null): string => {
+    if (!timestamp) return 'Never';
+    
+    try {
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return 'Invalid date';
+      
+      const now = new Date();
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+      
+      if (diffInDays === 0) {
+        return 'Today';
+      } else if (diffInDays === 1) {
+        return 'Yesterday';
+      } else if (diffInDays < 7) {
+        return `${diffInDays} days ago`;
+      } else {
+        return date.toLocaleDateString();
+      }
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
 
   const renderActions = () => {
-    console.log(`[DEBUG] renderActions for ${item.name}: isPolling=${isPolling}, database_exists=${item.database_exists}, lastPulled=${item.lastPulled}`);
-    
     if (isUnavailableForBackups()) {
       return null;
     }
