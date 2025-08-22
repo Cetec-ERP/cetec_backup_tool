@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     port: 5002,
     proxy: {
-      '/api': 'http://localhost:5001', // Your Hono backend
+      '/api': 'http://backups.cetecerpdevel.com:5001',
     },
   },
 })
