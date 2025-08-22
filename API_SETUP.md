@@ -49,7 +49,7 @@ The frontend makes requests to your local backend server:
 ```typescript
 // Frontend code
 const response = await axios.get(
-  `http://localhost:3001/api/cetec/customer?preshared_token=${token}`
+  `http://localhost:5001/api/cetec/customer?preshared_token=${token}`
 );
 ```
 
@@ -170,7 +170,7 @@ The backend automatically:
 
 ```typescript
 const response = await axios.get(
-  'http://localhost:3001/api/cetec/customer',
+  'http://localhost:5001/api/cetec/customer',
   {
     params: {
       preshared_token: 'your_token_here'
@@ -183,7 +183,7 @@ const response = await axios.get(
 
 ```typescript
 const response = await axios.get(
-  'http://localhost:3001/api/cetec/customer',
+  'http://localhost:5001/api/cetec/customer',
   {
     params: {
       preshared_token: 'your_token_here',
@@ -197,7 +197,7 @@ const response = await axios.get(
 
 ```typescript
 const response = await axios.get(
-  'http://localhost:3001/api/cetec/customer',
+  'http://localhost:5001/api/cetec/customer',
   {
     params: {
       preshared_token: 'your_token_here',
@@ -218,13 +218,13 @@ npm run dev:full
 ### 2. Test API Endpoint
 
 ```bash
-curl "http://localhost:3001/api/cetec/customer?preshared_token=YOUR_TOKEN"
+curl "http://localhost:5001/api/cetec/customer?preshared_token=YOUR_TOKEN"
 ```
 
 ### 3. Check MySQL Connection
 
 ```bash
-curl "http://localhost:3001/api/test-mysql"
+curl "http://localhost:5001/api/test-mysql"
 ```
 
 ## 🚨 Troubleshooting
@@ -232,8 +232,8 @@ curl "http://localhost:3001/api/test-mysql"
 ### Common Issues
 
 1. **CORS Errors**
-   - Ensure backend is running on port 3001
-   - Check that frontend makes requests to `http://localhost:3001`
+   - Ensure backend is running on port 5001
+   - Check that frontend makes requests to `http://localhost:5001`
 
 2. **Authentication Errors**
    - Verify preshared token is correct

@@ -31,7 +31,7 @@ All options will start both the frontend (Vite) and backend (Express) servers.
 ```bash
 npm run dev
 ```
-- Runs on: http://localhost:5173
+- Runs on: http://localhost:5002
 - Hot reload enabled
 - React development server
 
@@ -39,7 +39,7 @@ npm run dev
 ```bash
 npm run server
 ```
-- Runs on: http://localhost:3001
+- Runs on: http://localhost:5001
 - CETEC API proxy with MySQL integration
 - Customer data enrichment and backup management
 
@@ -125,7 +125,7 @@ Create a `.env` file in your project root with these variables:
 
 ```bash
 # Server Configuration
-PORT=3001
+PORT=5001
 
 # CETEC API Configuration
 API_URL=https://yourdomain.cetecerp.com
@@ -176,8 +176,8 @@ The backend automatically checks if a MySQL database exists for each customer's 
 
 1. **Port Already in Use**
    ```bash
-   lsof -ti:3001 | xargs kill -9  # Kill process on port 3001
-   lsof -ti:5173 | xargs kill -9  # Kill process on port 5173
+   lsof -ti:5001 | xargs kill -9  # Kill process on port 5001
+   lsof -ti:5002 | xargs kill -9  # Kill process on port 5002
    
    # Or use the provided script
    npm run kill:ports
@@ -190,8 +190,8 @@ The backend automatically checks if a MySQL database exists for each customer's 
    - See [ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md) for detailed MySQL setup
 
 3. **CORS Errors**
-   - Ensure backend is running on port 3001
-   - Check that frontend is making requests to `http://localhost:3001`
+   - Ensure backend is running on port 5001
+   - Check that frontend is making requests to `http://localhost:5001`
    - Verify CORS headers are properly set
 
 4. **Environment Variables Not Loading**
@@ -208,8 +208,8 @@ The backend automatically checks if a MySQL database exists for each customer's 
 ### **Server Status Check**
 ```bash
 # Check if servers are running
-lsof -i :3001  # Backend
-lsof -i :5173  # Frontend
+lsof -i :5001  # Backend
+lsof -i :5002  # Frontend
 
 # Check server logs
 # Backend logs appear in the terminal where you ran npm run server
@@ -221,7 +221,7 @@ lsof -i :5173  # Frontend
 The backend provides detailed error information through the `/api/test-mysql` endpoint:
 
 ```bash
-curl http://localhost:3001/api/test-mysql
+curl http://localhost:5001/api/test-mysql
 ```
 
 This will show:

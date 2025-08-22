@@ -18,7 +18,7 @@ function App() {
     
     try {
       const endpoint = 'api/cetec/customer';
-      const url = `http://localhost:3001/${endpoint}?preshared_token=${config.presharedToken}`;
+      const url = `http://localhost:5001/${endpoint}?preshared_token=${config.presharedToken}`;
       
       const response = await axios.get(url, { timeout: 60000 });
       
