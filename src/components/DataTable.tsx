@@ -178,8 +178,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
             hiddenDevelButtons={hiddenDevelButtons}
             isPolling={pollingCustomers.has(String(item.id))}
             onActionClick={handleActionClick}
-            onTimestampUpdate={onTimestampUpdate}
-            onDatabaseStatusUpdate={onDatabaseStatusUpdate}
           />
         ))}
       </div>
