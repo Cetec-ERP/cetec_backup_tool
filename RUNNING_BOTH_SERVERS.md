@@ -131,6 +131,7 @@ PORT=5001
 API_URL=https://yourdomain.cetecerp.com
 
 # Frontend Configuration (Vite will use these)
+VITE_API_URL=http://localhost:5001  # Points to local backend
 VITE_CETEC_DOMAIN=yourdomain.cetecerp.com
 VITE_PRESHARED_TOKEN=your_preshared_token_here
 VITE_API_PROTOCOL=https
