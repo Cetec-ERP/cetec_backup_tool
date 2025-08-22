@@ -1,90 +1,25 @@
 import React from 'react';
-import residentDBsConfig from '../config/resident-dbs.json';
 
 interface CustomerCardProps {
   item: any;
   hiddenDevelButtons: Set<string>;
   isPolling: boolean;
   onActionClick: (item: any) => void;
-  onTimestampUpdate?: (customerId: string, timestamp: string) => void;
-  onDatabaseStatusUpdate?: (customerId: string, databaseExists: any) => void;
 }
 
 const CustomerCard: React.FC<CustomerCardProps> = ({ 
   item, 
   hiddenDevelButtons, 
   isPolling, 
-  onActionClick,
-  onTimestampUpdate,
-  onDatabaseStatusUpdate 
+  onActionClick
 }) => {
   const techxPassword = import.meta.env.VITE_TECHX_PASSWORD;
-
-  const hasResidentDatabase = (domain: string): boolean => {
-    if (!residentDBsConfig || !domain) {
-      return false;
-    }
-    
-    return domain in residentDBsConfig;
-  };
 
   const isUnavailableForBackups = (): boolean => {
     if (item.resident_hosting && item.database_exists === 'unavailable') {
       return true;
     }
     return false;
-  };
-
-  const normalizePrioritySupport = (value: string): string => {
-    const normalizedValue = value.toLowerCase().trim();
-    
-    if (normalizedValue === 'lite' || normalizedValue === 'l') {
-      return 'Lite';
-    } else if (normalizedValue === 'standard' || normalizedValue === 'std' || normalizedValue === 's') {
-      return 'Standard';
-    } else if (normalizedValue === 'enterprise' || normalizedValue === 'ent' || normalizedValue === 'e') {
-      return 'Enterprise';
-    }
-    
-    return 'false';
-  };
-
-  const renderPrioritySupport = () => {
-    const normalizedValue = normalizePrioritySupport(String(item.priority_support || ''));
-    if (normalizedValue === 'false') {
-      return <span className="no-priority">No Support Tier</span>;
-    }
-    
-    return (
-      <span className={`priority-chip ${normalizedValue.toLowerCase()}`}>
-        {normalizedValue}
-      </span>
-    );
-  };
-
-  const formatTimestamp = (timestamp: string | null): string => {
-    if (!timestamp) return 'Never';
-    
-    try {
-      const date = new Date(timestamp);
-      if (isNaN(date.getTime())) return 'Invalid date';
-      
-      const now = new Date();
-      const diffInMs = now.getTime() - date.getTime();
-      const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-      
-      if (diffInDays === 0) {
-        return 'Today';
-      } else if (diffInDays === 1) {
-        return 'Yesterday';
-      } else if (diffInDays < 7) {
-        return `${diffInDays} days ago`;
-      } else {
-        return date.toLocaleDateString();
-      }
-    } catch (error) {
-      return 'Invalid date';
-    }
   };
 
   const renderActions = () => {
@@ -299,7 +234,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         </div>
         
         <div className="priority-chip-container">
-          {renderPrioritySupport()}
+          {/* Removed renderPrioritySupport as it was removed from props */}
         </div>
         
         <div className="card-actions">
