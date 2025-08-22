@@ -17,7 +17,7 @@ function App() {
     setError(null);
     
     try {
-      const endpoint = 'api/cetec/customer';
+      const endpoint = 'cetec/customer';  // Remove 'api/' prefix
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
       const url = `${apiBaseUrl}/${endpoint}?preshared_token=${config.presharedToken}`;
       

@@ -34,7 +34,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
         
         // Check database status
         const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-        const mysqlCheckResponse = await fetch(`${apiBaseUrl}/api/mysql/check`, {
+        const mysqlCheckResponse = await fetch(`${apiBaseUrl}/mysql/check`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
       setPollingCustomers(prev => new Set(prev).add(String(item.id)));
       
       const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-      const timestampResponse = await fetch(`${apiBaseUrl}/api/pull/record`, {
+      const timestampResponse = await fetch(`${apiBaseUrl}/pull/record`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,7 +138,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
           return;
         }
         
-        const backupApiUrl = `${apiBaseUrl}/api/backup/request`;
+        const backupApiUrl = `${apiBaseUrl}/backup/request`;
         
         fetch(backupApiUrl, {
           method: 'POST',
