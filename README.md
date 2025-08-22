@@ -61,20 +61,23 @@ A comprehensive internal tool for managing customer backups, database verificati
 Create a `.env` file in your project root:
 
 ```bash
-# Server Configuration
-PORT=3001
+# ========================================
+# Environment Variables
+# ========================================
+# Copy server.env.example to .env and fill in your values:
 
-# CETEC API Configuration
-API_URL=https://yourdomain.cetecerp.com
+# Backend Configuration
+PORT=5001                    # Backend server port
+API_URL=https://internal.cetecerp.com  # CETEC ERP API base URL
 
-# Frontend Configuration
-VITE_CETEC_DOMAIN=yourdomain.cetecerp.com
-VITE_PRESHARED_TOKEN=your_preshared_token_here
+# Frontend Configuration  
+VITE_CETEC_DOMAIN=internal.cetecerp.com
+VITE_PRESHARED_TOKEN=your_token_here
 VITE_API_PROTOCOL=https
 
-# MySQL Database Configuration
+# MySQL Configuration
 MYSQL_HOST=your_mysql_host
-MYSQL_USER=your_mysql_username
+MYSQL_USER=your_mysql_user  
 MYSQL_PASSWORD=your_mysql_password
 MYSQL_PORT=3306
 
@@ -152,7 +155,7 @@ cetec_backup_puller/
 - `npm run dev:custom` - Start both servers with custom process manager
 - `npm run build` - Build for production
 - `npm run lint` - Run ESLint
-- `npm run kill:ports` - Kill processes on ports 3001 and 5173
+- `npm run kill:ports` - Kill processes on ports 5001 and 5002
 
 ## 🚨 Troubleshooting
 
@@ -160,15 +163,15 @@ cetec_backup_puller/
 
 1. **Port Conflicts**: Use `npm run kill:ports` to clear occupied ports
 2. **MySQL Connection**: Verify credentials and network access
-3. **CORS Errors**: Ensure backend is running on port 3001
+3. **CORS Errors**: Ensure backend is running on port 5001
 4. **Environment Variables**: Restart server after updating `.env`
 
 ### Server Status Check
 
 ```bash
 # Check if servers are running
-lsof -i :3001  # Backend
-lsof -i :5173  # Frontend
+lsof -i :5001  # Backend
+lsof -i :5002  # Frontend
 ```
 
 ## 📚 Documentation

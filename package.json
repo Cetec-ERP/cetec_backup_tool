@@ -9,7 +9,7 @@
     "dev:full": "concurrently --kill-others --prefix-colors \"bgBlue.bold,bgGreen.bold\" --names \"BACKEND,FRONTEND\" \"node server.js\" \"npm run dev\"",
     "dev:full:clean": "concurrently --kill-others --prefix-colors \"bgBlue.bold,bgGreen.bold\" --names \"BACKEND,FRONTEND\" \"npm run server\" \"npm run dev\"",
     "dev:custom": "node start-dev.js",
-    "kill:ports": "kill-port 3001 5173",
+    "kill:ports": "kill-port 5001 5002",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

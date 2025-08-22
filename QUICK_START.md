@@ -55,13 +55,13 @@ npm run dev:full
 ```
 
 This will start:
-- **Frontend**: http://localhost:5173 (React + Vite)
-- **Backend**: http://localhost:3001 (Node.js + Express)
+- **Frontend**: http://localhost:5002 (React + Vite)
+- **Backend**: http://localhost:5001 (Node.js + Express)
 
 ## ✅ Step 4: Verify Setup
 
-1. **Check Frontend**: Open http://localhost:5173 in your browser
-2. **Check Backend**: Visit http://localhost:3001/api/test-mysql
+1. **Check Frontend**: Open http://localhost:5002 in your browser
+2. **Check Backend**: Visit http://localhost:5001/api/test-mysql
 3. **Verify Data Loading**: The app should automatically load customer data
 
 ## 🎯 What You'll See
@@ -97,8 +97,8 @@ npm run dev:full
 - See [ENVIRONMENT_SETUP.md](./ENVIRONMENT_SETUP.md) for detailed setup
 
 #### 3. **CORS Errors**
-- Ensure backend is running on port 3001
-- Check frontend makes requests to `http://localhost:3001`
+- Ensure backend is running on port 5001
+- Check frontend makes requests to `http://localhost:5001`
 - Verify CORS headers are set correctly
 
 #### 4. **Environment Variables Not Loading**
@@ -110,14 +110,14 @@ npm run dev:full
 
 ```bash
 # Check server status
-lsof -i :3001  # Backend
-lsof -i :5173  # Frontend
+lsof -i :5001  # Backend
+lsof -i :5002  # Frontend
 
 # Test MySQL connection
-curl http://localhost:3001/api/test-mysql
+curl http://localhost:5001/api/test-mysql
 
 # Test CETEC API
-curl "http://localhost:3001/api/cetec/customer?preshared_token=YOUR_TOKEN"
+curl "http://localhost:5001/api/cetec/customer?preshared_token=YOUR_TOKEN"
 ```
 
 ## 📱 Using the Application

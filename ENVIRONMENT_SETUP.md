@@ -1,3 +1,23 @@
+# ========================================
+# Environment Variables
+# ========================================
+# Copy server.env.example to .env and fill in your values:
+
+# Backend Configuration
+PORT=5001                    # Backend server port
+API_URL=https://internal.cetecerp.com  # CETEC ERP API base URL
+
+# Frontend Configuration  
+VITE_CETEC_DOMAIN=internal.cetecerp.com
+VITE_PRESHARED_TOKEN=your_token_here
+VITE_API_PROTOCOL=https
+
+# MySQL Configuration
+MYSQL_HOST=your_mysql_host
+MYSQL_USER=your_mysql_user  
+MYSQL_PASSWORD=your_mysql_password
+MYSQL_PORT=3306
+
 # Environment-Based MySQL Connection Setup
 
 This guide shows you how to automatically switch between Cloud SQL Proxy (local development) and direct host connections (production) based on your environment.
@@ -31,7 +51,7 @@ The server automatically detects your environment and chooses the right connecti
 
 3. **Test connection**:
    ```bash
-   curl http://localhost:3001/api/test-mysql
+   curl http://localhost:5001/api/test-mysql
    ```
 
 ### **Production (Direct Host)**
@@ -49,7 +69,7 @@ The server automatically detects your environment and chooses the right connecti
 
 2. **Test connection**:
    ```bash
-   curl http://your-server:3001/api/test-mysql
+   curl http://your-server:5001/api/test-mysql
    ```
 
 ## 🔄 **Automatic Switching**
