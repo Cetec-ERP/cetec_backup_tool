@@ -388,20 +388,27 @@ const App: React.FC = () => {
                 <span className="summary-value">{getSummaryStats().itarHosting}</span>
               </div>
               <div className="summary-item">
-                <span className="summary-label">Lite Support:</span>
-                <span className="summary-value">{getSummaryStats().lite}</span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Standard Support:</span>
-                <span className="summary-value">{getSummaryStats().standard}</span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Enterprise Support:</span>
-                <span className="summary-value">{getSummaryStats().enterprise}</span>
-              </div>
-              <div className="summary-item">
-                <span className="summary-label">Active Validations:</span>
-                <span className="summary-value">{activeValidations.size}</span>
+                <span className="summary-label">Priority Support:</span>
+                <div className="priority-chips">
+                  <span className="priority-chip lite">
+                    {filteredData.filter((customer: any) => {
+                      const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                      return prioritySupport === 'lite' || prioritySupport === 'l';
+                    }).length}
+                  </span>
+                  <span className="priority-chip standard">
+                    {filteredData.filter((customer: any) => {
+                      const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                      return prioritySupport === 'standard' || prioritySupport === 'std' || prioritySupport === 's';
+                    }).length}
+                  </span>
+                  <span className="priority-chip enterprise">
+                    {filteredData.filter((customer: any) => {
+                      const prioritySupport = String(customer.priority_support || '').toLowerCase().trim();
+                      return prioritySupport === 'enterprise' || prioritySupport === 'ent' || prioritySupport === 'e';
+                    }).length}
+                  </span>
+                </div>
               </div>
             </div>
           </>
