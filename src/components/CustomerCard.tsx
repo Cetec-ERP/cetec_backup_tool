@@ -61,15 +61,45 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       return null;
     }
     
+    // Resident hosting customers can have devel buttons if they have an entry in resident-dbs.json
+    // Only block them if they don't have a database or if they're marked as unavailable
     if (isResidentHosting) {
-      if (item.database_exists === 'resident_hosting') {
-        return null; // Resident hosting customers don't get devel buttons
-      } else {
-        return null; // Unavailable resident hosting
+      if (item.database_exists === 'unavailable') {
+        return null; // Resident hosting with unavailable database
       }
+      // If they have any other database status, they can potentially get a devel button
+      // (pending_validation, false, error, validation_error, or true)
     }
 
-    // Handle pending validation cases
+    // Handle confirmed database existence FIRST - this takes priority over validation cache
+    if (item.database_exists === true && !isDevelButtonHidden) {
+      const customerUrl = `http://${domain}.cetecerpdevel.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+      return (
+        <button
+          className="devel-button valid"
+          onClick={() => window.open(customerUrl, '_blank')}
+          title="Open devel environment"
+        >
+          Devel
+        </button>
+      );
+    }
+
+    // Handle resident hosting customers with confirmed database
+    if (item.database_exists === 'resident_hosting' && !isDevelButtonHidden) {
+      const customerUrl = `http://${domain}.cetecerpdevel.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
+      return (
+        <button
+          className="devel-button valid"
+          onClick={() => window.open(customerUrl, '_blank')}
+          title="Open devel environment"
+        >
+          Devel
+        </button>
+        );
+    }
+
+    // Handle pending validation cases only if database status is not confirmed
     if (item.database_exists === 'pending_validation' || 
         item.database_exists === false || 
         item.database_exists === 'unavailable' ||
@@ -108,20 +138,6 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           </button>
         );
       }
-    }
-
-    // Handle confirmed database existence
-    if (item.database_exists === true && !isDevelButtonHidden) {
-      const customerUrl = `http://${domain}.cetecerpdevel.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
-      return (
-        <button
-          className="devel-button valid"
-          onClick={() => window.open(customerUrl, '_blank')}
-          title="Open devel environment"
-        >
-          Devel
-        </button>
-      );
     }
     
     return null;
