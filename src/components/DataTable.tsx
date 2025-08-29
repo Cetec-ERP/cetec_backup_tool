@@ -3,10 +3,8 @@ import CustomerCard from './CustomerCard';
 
 interface DataTableProps {
   data: any[];
-  title?: string;
-  columns?: string[];
-  onTimestampUpdate?: (customerId: string, timestamp: string) => void;
-  onDatabaseStatusUpdate?: (customerId: string, databaseExists: any) => void;
+  onTimestampUpdate: (customerId: string, timestamp: string, databaseExists?: any) => void;
+  onDatabaseStatusUpdate: (customerId: string, databaseExists: any) => void;
   validationCache?: Map<string, { 
     reachable: boolean | undefined; 
     status?: number; 
@@ -14,9 +12,20 @@ interface DataTableProps {
     finalUrl?: string;
     reason?: string;
   }>;
+  addToValidationQueue: (customerId: string) => void;
+  isValidationActive: boolean;
+  activeValidations?: Set<string>;
 }
 
-const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDatabaseStatusUpdate, validationCache }) => {
+const DataTable: React.FC<DataTableProps> = ({ 
+  data, 
+  onTimestampUpdate, 
+  onDatabaseStatusUpdate, 
+  validationCache,
+  addToValidationQueue,
+  isValidationActive,
+  activeValidations
+}) => {
   const [hiddenDevelButtons, setHiddenDevelButtons] = useState<Set<string>>(new Set());
   const [pollingEnvironments, setPollingEnvironments] = useState<Set<string>>(new Set());
 
@@ -214,6 +223,9 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
             onActionClick={handleActionClick}
             onDatabaseStatusUpdate={onDatabaseStatusUpdate}
             validationCache={validationCache}
+            addToValidationQueue={addToValidationQueue}
+            isValidationActive={isValidationActive}
+            activeValidations={activeValidations}
           />
         ))}
       </div>

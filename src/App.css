@@ -93,6 +93,13 @@ body {
   color: var(--text-muted);
   cursor: not-allowed;
   opacity: 0.7;
+  transition: all 0.2s;
+}
+
+.devel-button.pending:hover {
+  opacity: 1;
+  background-color: var(--primary-color);
+  color: white;
 }
 
 .devel-button.validating {
@@ -101,6 +108,8 @@ body {
   cursor: not-allowed;
   opacity: 0.8;
 }
+
+
 
 .devel-button.invalid {
   background-color: var(--danger-color);
@@ -1449,3 +1458,75 @@ body {
     justify-content: space-between;
   }
 }
+
+/* Validation status indicator */
+.validation-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--info-color);
+  color: white;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.validation-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Loading sections */
+.loading-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--bg-tertiary);
+  border-top: 4px solid var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.error-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.error-message {
+  color: var(--danger-color);
+  font-weight: 500;
+}
+
+.retry-button {
+  padding: 0.5rem 1rem;
+  background-color: var(--accent-primary);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+  background-color: var(--accent-hover);
+}
+
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 interface CustomerCardProps {
@@ -14,6 +14,9 @@ interface CustomerCardProps {
     finalUrl?: string;
     reason?: string;
   }>;
+  addToValidationQueue: (customerId: string) => void;
+  isValidationActive: boolean;
+  activeValidations?: Set<string>;
 }
 
 const CustomerCard: React.FC<CustomerCardProps> = ({ 
@@ -22,9 +25,79 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   isPolling, 
   onActionClick,
   onDatabaseStatusUpdate,
-  validationCache
+  validationCache,
+  addToValidationQueue,
+  isValidationActive,
+  activeValidations
 }) => {
   const techxPassword = import.meta.env.VITE_TECHX_PASSWORD;
+
+  // Track if this customer has already been queued for validation
+  const [hasQueuedValidation, setHasQueuedValidation] = useState(false);
+  
+  // Track the last time this customer was validated to prevent rapid re-validations
+  const lastValidationTime = useRef<number>(0);
+
+  // Trigger automatic validation when component mounts if needed
+  useEffect(() => {
+    // Only validate if:
+    // 1. Customer needs validation (pending_validation status)
+    // 2. Not already being validated
+    // 3. Has a valid domain
+    // 4. Haven't already queued this validation
+    // 5. Status is still pending (not already validated)
+    // 6. Not ITAR hosting (which doesn't need validation)
+    // 7. Haven't validated this customer recently (within last 5 seconds)
+    const now = Date.now();
+    if (!hasQueuedValidation && 
+        item.database_exists === 'pending_validation' && 
+        item.domain && 
+        item.domain.trim() !== '' && 
+        item.domain !== 'undefined' &&
+        !item.itar_hosting_bc &&
+        !activeValidations?.has(String(item.id)) &&
+        (now - lastValidationTime.current) > 5000) { // 5 second cooldown
+      
+      // Add a small delay to prevent too many rapid validations
+      const timeoutId = setTimeout(() => {
+        // Add to validation queue and mark as queued
+        addToValidationQueue(String(item.id));
+        setHasQueuedValidation(true);
+        lastValidationTime.current = now;
+      }, 100); // 100ms delay
+      
+      return () => clearTimeout(timeoutId);
+    }
+    
+    // Reset the flag if the status changes from pending to something else
+    if (hasQueuedValidation && item.database_exists !== 'pending_validation') {
+      setHasQueuedValidation(false);
+    }
+  }, [item.id, item.domain, item.database_exists, item.itar_hosting_bc, item.resident_hosting, addToValidationQueue, hasQueuedValidation, activeValidations]);
+
+  // Handle cases where a customer's status changes and they might need re-validation
+  useEffect(() => {
+    // If a customer's status changes back to pending_validation and we haven't queued them yet
+    const now = Date.now();
+    if (item.database_exists === 'pending_validation' && 
+        !hasQueuedValidation && 
+        !activeValidations?.has(String(item.id)) &&
+        item.domain && 
+        item.domain.trim() !== '' && 
+        item.domain !== 'undefined' &&
+        !item.itar_hosting_bc &&
+        (now - lastValidationTime.current) > 5000) { // 5 second cooldown
+      
+      // Add a small delay to prevent too many rapid validations
+      const timeoutId = setTimeout(() => {
+        addToValidationQueue(String(item.id));
+        setHasQueuedValidation(true);
+        lastValidationTime.current = now;
+      }, 200); // 200ms delay for status changes
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [item.database_exists, hasQueuedValidation, activeValidations, item.id, item.domain, item.itar_hosting_bc, addToValidationQueue]);
 
   // Get validation status from cache instead of individual validation
   const getValidationStatus = () => {
@@ -99,12 +172,38 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         );
     }
 
-    // Handle pending validation cases - show spinner while checking
+    // Handle pending validation cases - show pending button with spinner
     if (item.database_exists === 'pending_validation') {
+      // Check if this customer is currently being validated
+      const isCurrentlyValidating = isValidationActive && activeValidations?.has(String(item.id));
+      
+      if (isCurrentlyValidating) {
+        return (
+          <button className="devel-button pending" disabled title="Validating devel environment...">
+            <span className="spinner"></span>
+            Pending
+          </button>
+        );
+      }
+      
       return (
-        <button className="devel-button pending" disabled title="Validating devel environment...">
+        <button 
+          className="devel-button pending" 
+          onClick={() => {
+            // Manually trigger validation when user clicks
+            if (addToValidationQueue) {
+              const now = Date.now();
+              if ((now - lastValidationTime.current) > 5000) { // 5 second cooldown
+                addToValidationQueue(String(item.id));
+                setHasQueuedValidation(true);
+                lastValidationTime.current = now;
+              }
+            }
+          }}
+          title="Click to validate devel environment"
+        >
           <span className="spinner"></span>
-          Pending...
+          Pending
         </button>
       );
     }
