@@ -71,7 +71,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       // (pending_validation, false, error, validation_error, or true)
     }
 
-    // Handle confirmed database existence FIRST - this takes priority over validation cache
+    // Handle confirmed environment readiness (database_exists === true)
     if (item.database_exists === true && !isDevelButtonHidden) {
       const customerUrl = `http://${domain}.cetecerpdevel.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
       return (
@@ -99,47 +99,18 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         );
     }
 
-    // Handle pending validation cases only if database status is not confirmed
-    if (item.database_exists === 'pending_validation' || 
-        item.database_exists === false || 
-        item.database_exists === 'unavailable' ||
-        item.database_exists === 'error' ||
-        item.database_exists === 'validation_error') {
-      if (linkValidationStatus === 'pending') {
-        return (
-          <button className="devel-button pending" disabled title="Validating devel environment...">
-            <span className="spinner"></span>
-            Pending...
-          </button>
-        );
-      } else if (linkValidationStatus === 'valid') {
-        const customerUrl = `http://${domain}.cetecerpdevel.com/auth/login?username=techx&password=${encodeURIComponent(techxPassword)}`;
-        return (
-          <button
-            className="devel-button valid"
-            onClick={() => window.open(customerUrl, '_blank')}
-            title="Open devel environment"
-          >
-            Devel
-          </button>
-        );
-      } else if (linkValidationStatus === 'invalid') {
-        return (
-          <button className="devel-button invalid" disabled title="Devel environment unreachable">
-            Unreachable
-          </button>
-        );
-      } else if (linkValidationStatus === 'redirected') {
-        return null; // Don't show any button for redirected domains
-      } else if (linkValidationStatus === 'error') {
-        return (
-          <button className="devel-button error" disabled title="Validation error">
-            Error
-          </button>
-        );
-      }
+    // Handle pending validation cases - show spinner while checking
+    if (item.database_exists === 'pending_validation') {
+      return (
+        <button className="devel-button pending" disabled title="Validating devel environment...">
+          <span className="spinner"></span>
+          Pending...
+        </button>
+      );
     }
-    
+
+    // For all other cases (false, unavailable, error, etc.), don't show any button
+    // This includes environments that are not ready, unavailable, or had validation errors
     return null;
   };
 

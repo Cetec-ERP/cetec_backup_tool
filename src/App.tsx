@@ -188,26 +188,20 @@ const App: React.FC = () => {
 
   // Batch validation function to efficiently validate multiple domains at once
   const batchValidateDomains = useCallback(async (customers: Customer[]) => {
-    const domainsToValidate = new Set<string>();
-    
-    customers.forEach(customer => {
-      if (customer.domain && 
-          customer.domain.trim() !== '' && 
-          customer.domain !== 'undefined' &&
-          !customer.itar_hosting_bc && 
-          !customer.resident_hosting &&
-          (customer.database_exists === 'pending_validation' || 
-           customer.database_exists === false || 
-           customer.database_exists === 'unavailable' ||
-           customer.database_exists === 'error' ||
-           customer.database_exists === 'validation_error')) {
-        domainsToValidate.add(customer.domain);
-      }
-    });
+    const customersToValidate = customers.filter(customer => 
+      customer.domain && 
+      customer.domain.trim() !== '' && 
+      customer.domain !== 'undefined' &&
+      !customer.itar_hosting_bc && 
+      !customer.resident_hosting &&
+      (customer.database_exists === 'pending_validation' || 
+       customer.database_exists === false || 
+       customer.database_exists === 'unavailable' ||
+       customer.database_exists === 'error' ||
+       customer.database_exists === 'validation_error')
+    );
 
-    const uncachedDomains = Array.from(domainsToValidate).filter(domain => !validationCache.has(domain));
-    
-    if (uncachedDomains.length === 0) {
+    if (customersToValidate.length === 0) {
       return;
     }
 
@@ -216,53 +210,89 @@ const App: React.FC = () => {
     try {
       const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
       
-      const validationPromises = uncachedDomains.map(async (domain) => {
+      const validationPromises = customersToValidate.map(async (customer) => {
         try {
-          const response = await axios.post(`${apiBaseUrl}/validate-link`, { domain }, { timeout: 10000 });
+          const response = await axios.post(`${apiBaseUrl}/validate-environment`, {
+            customerId: customer.id,
+            domain: customer.domain,
+            residentHosting: customer.resident_hosting,
+            itarHosting: customer.itar_hosting_bc
+          }, { timeout: 10000 });
+          
           return {
-            domain,
-            reachable: response.data.reachable,
-            status: response.data.status,
-            error: response.data.error,
-            finalUrl: response.data.finalUrl,
-            reason: response.data.reason
+            customerId: customer.id,
+            domain: customer.domain,
+            environmentStatus: response.data.environmentStatus,
+            success: response.data.success
           };
         } catch (error: any) {
           return {
-            domain,
-            reachable: undefined,
-            error: error.message,
-            reason: 'api_error'
+            customerId: customer.id,
+            domain: customer.domain,
+            environmentStatus: 'error',
+            success: false,
+            error: error.message
           };
         }
       });
 
       const results = await Promise.all(validationPromises);
 
-      // Only filter out results that are truly failed (undefined reachable)
-      // Timeout errors might still have valid validation data from previous attempts
-      const successfulResults = results.filter(result => result.reachable !== undefined);
-      const failedResults = results.filter(result => result.reachable === undefined);
-      
-      // Update cache with successful results (including failed validations like redirects)
-      const newCache = new Map(validationCache);
-      successfulResults.forEach(result => {
-        newCache.set(result.domain, result);
-      });
-
-      setValidationCache(newCache);
-      
-      // Update customer data with validation results
+      // Update customer data with environment validation results
       setData(prevData => prevData.map(customer => {
-        if (customer.domain && newCache.has(customer.domain)) {
-          const validationResult = newCache.get(customer.domain)!;
+        const validationResult = results.find(result => result.customerId === customer.id);
+        if (validationResult && validationResult.success) {
+          // Map environment status to database_exists for compatibility
+          // Only set to true if environment is actually ready
+          // For all other cases, keep the original status or set to false
+          let databaseExists;
+          switch (validationResult.environmentStatus) {
+            case 'ready':
+              databaseExists = true; // Environment is ready - show Devel button
+              break;
+            case 'not_ready':
+              databaseExists = false; // Environment exists but not ready - no button
+              break;
+            case 'unavailable':
+              databaseExists = 'unavailable'; // ITAR/resident hosting - no button
+              break;
+            default:
+              databaseExists = false; // Any other error - no button
+          }
+          
           return {
             ...customer,
-            database_exists: validationResult.reachable ? true : false,
-            validation_status: validationResult.reachable ? 'valid' : 'invalid',
-            validation_error: validationResult.error,
-            validation_reason: validationResult.reason,
-            final_url: validationResult.finalUrl
+            database_exists: databaseExists
+          };
+        }
+        return customer;
+      }));
+
+      // Also update filtered data to keep UI in sync
+      setFilteredData(prevFilteredData => prevFilteredData.map(customer => {
+        const validationResult = results.find(result => result.customerId === customer.id);
+        if (validationResult && validationResult.success) {
+          // Map environment status to database_exists for compatibility
+          // Only set to true if environment is actually ready
+          // For all other cases, keep the original status or set to false
+          let databaseExists;
+          switch (validationResult.environmentStatus) {
+            case 'ready':
+              databaseExists = true; // Environment is ready - show Devel button
+              break;
+            case 'not_ready':
+              databaseExists = false; // Environment exists but not ready - no button
+              break;
+            case 'unavailable':
+              databaseExists = 'unavailable'; // ITAR/resident hosting - no button
+              break;
+            default:
+              databaseExists = false; // Any other error - no button
+          }
+          
+          return {
+            ...customer,
+            database_exists: databaseExists
           };
         }
         return customer;
@@ -273,7 +303,7 @@ const App: React.FC = () => {
     } finally {
       setIsValidating(false);
     }
-  }, [validationCache]);
+  }, []);
 
   return (
     <div className="app-container">
