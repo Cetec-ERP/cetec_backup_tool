@@ -357,13 +357,13 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     const isResidentHosting = Boolean(item.resident_hosting);
     
     if (!isResidentHosting) {
-      if (!testEnvironment || testEnvironment === '0' || testEnvironment === false) {
+      if (!testEnvironment || testEnvironment === '0') {
         return null;
       }
     }
 
     let buttonText = 'Test ↗';
-    if (testEnvironment && testEnvironment !== '0' && testEnvironment !== false) {
+    if (testEnvironment && testEnvironment !== '0') {
       if (typeof testEnvironment === 'string') {
         if (testEnvironment === 'Update Nightly') {
           buttonText = 'Test (nightly) ↗';
