@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import residentDBsConfig from '../config/resident-dbs.json';
 
 interface Customer {
   id: string | number;
@@ -109,10 +108,6 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange,
     return 'false';
   };
 
-  const hasResidentDatabase = (domain: string): boolean => {
-    return residentDBsConfig.some(db => db.domain === domain);
-  };
-
   const applyFilters = () => {
     let filtered = data.filter(item => {
       // Search term filter
@@ -137,9 +132,9 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange,
       if (filters.resident_hosting) {
         const itemValue = item.resident_hosting;
         if (filters.resident_hosting === '1') {
-          return itemValue === 1 || itemValue === true;
+          return Boolean(itemValue);
         } else if (filters.resident_hosting === '0') {
-          return itemValue !== 1 && itemValue !== true;
+          return !Boolean(itemValue);
         }
       }
 
@@ -147,9 +142,9 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange,
       if (filters.test_environment) {
         const itemValue = item.test_environment;
         if (filters.test_environment === 'true') {
-          return itemValue === 1 || itemValue === true;
+          return Boolean(itemValue);
         } else if (filters.test_environment === 'false') {
-          return !itemValue || itemValue === 0 || itemValue === '0' || itemValue === false || itemValue === null || itemValue === undefined || itemValue === '';
+          return !itemValue || itemValue === '0' || itemValue === null || itemValue === undefined || itemValue === '';
         }
       }
 
