@@ -8,7 +8,7 @@ interface DataTableProps {
   onTimestampUpdate?: (customerId: string, timestamp: string) => void;
   onDatabaseStatusUpdate?: (customerId: string, databaseExists: any) => void;
   validationCache?: Map<string, { 
-    reachable: boolean; 
+    reachable: boolean | undefined; 
     status?: number; 
     error?: string; 
     finalUrl?: string;

@@ -486,7 +486,6 @@ app.post("/api/pull/record", async (req, res) => {
 app.post("/api/backup/request", async (req, res) => {
   const timestamp = new Date().toISOString();
   const requestId = Math.random().toString(36).substr(2, 9);
-  console.log(`[BACKEND] Backup request received for database: ${req.body.dbname} at ${timestamp} - Request ID: ${requestId}`);
   try {
     const { dbname } = req.body;
     
@@ -589,89 +588,57 @@ app.post("/api/mysql/check", async (req, res) => {
 app.post("/api/validate-link", async (req, res) => {
   try {
     const { domain } = req.body;
-    
     if (!domain) {
       return res.status(400).json({ error: "Domain is required" });
     }
-    
-    // Only log for specific test domains
-    const shouldLog = ['4p', 'ocdlabs', 'bristolmanufacturingllccom'].includes(domain.toLowerCase());
-    
-    // Log for all domains when validation starts
-    console.log(`🌐 [Backend] Received validation request for domain: ${domain}`);
-    
+
     const develUrl = `http://${domain}.cetecerpdevel.com/auth/login_new`;
-    // const develUrl = `http://${domain}.cetecerpdevel.com`;
-    if (shouldLog) {
-      console.log(`🌐 [Backend] Validating devel environment URL: ${develUrl}`);
-    }
-    
+
     try {
-      // Use a GET request to check if the URL is accessible and follow redirects
       const response = await axios.get(develUrl, {
-        timeout: 5000, // 5 second timeout for link validation
-        maxRedirects: 5, // Allow redirects to see where they end up
-        validateStatus: (status) => status < 500 // Accept any status < 500 initially
+        timeout: 5000,
+        maxRedirects: 5,
+        validateStatus: (status) => status < 500
       });
-      
-      // Check if the final URL after redirects is the main site
+
       const finalUrl = response.request.res.responseUrl || response.config.url;
       const isRedirectedToMainSite = finalUrl.includes('cetecerp.com') && !finalUrl.includes(domain);
-      
+
       if (isRedirectedToMainSite) {
-        console.log(`❌ [Backend] FAILED: ${domain} redirects to main site - ${finalUrl}`);
-        if (shouldLog) {
-          console.log(`❌ [Backend] FAILED: ${develUrl} redirects to main site - ${finalUrl}`);
-        }
-        res.json({
-          success: true,
-          domain: domain,
-          url: develUrl,
-          reachable: false,
-          status: response.status,
-          finalUrl: finalUrl,
-          reason: 'redirected_to_main_site'
+        res.json({ 
+          success: true, 
+          domain: domain, 
+          url: develUrl, 
+          reachable: false, 
+          status: response.status, 
+          finalUrl: finalUrl, 
+          reason: 'redirected_to_main_site' 
         });
         return;
       }
-      
-      // If we get here, the domain is valid and not redirected to main site
-      console.log(`✅ [Backend] SUCCESS: ${domain} is reachable (Status: ${response.status}, Final URL: ${finalUrl})`);
-      if (shouldLog) {
-        console.log(`✅ [Backend] SUCCESS: ${develUrl} is reachable (Status: ${response.status}, Final URL: ${finalUrl})`);
-      }
-      res.json({
-        success: true,
-        domain: domain,
-        url: develUrl,
-        reachable: true,
-        status: response.status,
-        finalUrl: finalUrl
+
+      res.json({ 
+        success: true, 
+        domain: domain, 
+        url: develUrl, 
+        reachable: true, 
+        status: response.status, 
+        finalUrl: finalUrl 
       });
-      
+
     } catch (axiosError) {
-      // If axios fails (timeout, network error, etc.), the link is not reachable
-      console.log(`❌ [Backend] FAILED: ${domain} is not reachable - ${axiosError.message}`);
-      if (shouldLog) {
-        console.log(`❌ [Backend] FAILED: ${develUrl} is not reachable - ${axiosError.message}`);
-      }
-      res.json({
-        success: true,
-        domain: domain,
-        url: develUrl,
-        reachable: false,
-        error: axiosError.message,
-        reason: 'network_error'
+      res.json({ 
+        success: true, 
+        domain: domain, 
+        url: develUrl, 
+        reachable: false, 
+        error: axiosError.message, 
+        reason: 'network_error' 
       });
     }
-    
   } catch (error) {
     console.error('Error in link validation:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      message: "Link validation failed"
-    });
+    res.status(500).json({ success: false, error: error.message, message: "Link validation failed" });
   }
 });
 
