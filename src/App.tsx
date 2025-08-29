@@ -186,18 +186,6 @@ const App: React.FC = () => {
     return { total, residentHosting, itarHosting };
   };
 
-  const resetCache = () => {
-    setValidationCache(new Map());
-  };
-
-  const clearDomainFromCache = (domain: string) => {
-    setValidationCache(prevCache => {
-      const newCache = new Map(prevCache);
-      newCache.delete(domain);
-      return newCache;
-    });
-  };
-
   // Batch validation function to efficiently validate multiple domains at once
   const batchValidateDomains = useCallback(async (customers: Customer[]) => {
     const domainsToValidate = new Set<string>();
@@ -338,24 +326,6 @@ const App: React.FC = () => {
               onRefresh={startBackupProcess}
               loading={loading}
             />
-          
-            {/* Cache reset button for debugging */}
-            <button 
-              onClick={resetCache}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#6c757d',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                marginLeft: '12px'
-              }}
-              title="Reset validation cache for debugging"
-            >
-              Reset Cache
-            </button>
           
             {filteredData.length > 0 && (() => {
               const stats = getSummaryStats();
