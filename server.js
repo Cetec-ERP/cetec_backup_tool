@@ -1,7 +1,6 @@
 import express from "express";
 import axios from "axios";
 import dotenv from "dotenv";
-import mysql from "mysql2/promise";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from 'url';
@@ -22,35 +21,6 @@ if (missingEnvVars.length > 0) {
   console.warn('Server will start with default values, but some features may not work properly.');
 }
 
-const mysqlConfig = {
-  host: process.env.MYSQL_HOST,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  port: process.env.MYSQL_PORT || 3306,
-  
-  ...(process.env.NODE_ENV === 'development' && process.env.MYSQL_SOCKET && { 
-    socketPath: process.env.MYSQL_SOCKET 
-  }),
-  
-  ...(process.env.NODE_ENV === 'development' && process.env.MYSQL_SOCKET ? {
-    connectTimeout: 10000,
-    connectionLimit: 10,
-    multipleStatements: false,
-    dateStrings: true,
-    charset: 'utf8mb4',
-  } : {
-    connectTimeout: 60000,
-    connectionLimit: 5,
-    ssl: false,
-    multipleStatements: false,
-    dateStrings: true,
-    charset: 'utf8mb4',
-    keepAliveInitialDelay: 10000,
-    enableKeepAlive: true,
-  }),
-};
-
-let mysqlPool = null;
 let residentDBsConfig = null;
 
 async function loadResidentDBsConfig() {
@@ -130,132 +100,6 @@ function getResidentDatabaseName(domain) {
   return matchingKey ? residentDBsConfig[matchingKey] : null;
 }
 
-async function initializeMySQLPool() {
-  if (!isMySQLConfigured) {
-    return;
-  }
-  
-  try {
-    mysqlPool = mysql.createPool(mysqlConfig);
-    
-    const testConnection = await mysqlPool.getConnection();
-    testConnection.release();
-  } catch (error) {
-    console.error('[MYSQL] Failed to initialize MySQL pool:', error.message);
-    mysqlPool = null;
-  }
-}
-
-const isMySQLConfigured = mysqlConfig.host && mysqlConfig.user && mysqlConfig.password;
-
-async function checkDatabaseExists(domain, isResidentHosting = false) {
-  if (!mysqlPool) {
-    throw new Error('MySQL pool not initialized');
-  }
-
-  let connection;
-  try {
-    connection = await mysqlPool.getConnection();
-    
-    let databaseName = domain;
-    if (isResidentHosting) {
-      const residentDBName = getResidentDatabaseName(domain);
-      if (residentDBName) {
-        databaseName = residentDBName;
-      } else {
-        throw new Error(`No database mapping found for resident hosting domain: ${domain}`);
-      }
-    }
-    
-    const query = `
-      SELECT COUNT(*) as table_count 
-      FROM information_schema.TABLES 
-      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'usage_stats'
-    `;
-    const params = [databaseName];
-    
-    const [rows] = await Promise.race([
-      connection.execute(query, params),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Query timeout')), 30000)
-      )
-    ]);
-    
-    return rows[0].table_count > 0;
-  } catch (error) {
-    console.error(`Error checking database for domain ${domain}:`, error.message);
-    throw error;
-  } finally {
-    if (connection) {
-      connection.release();
-    }
-  }
-}
-
-async function enrichCustomerData(customers) {
-  if (!customers || !Array.isArray(customers)) {
-    return customers;
-  }
-
-  const enrichedCustomers = [];
-  let mysqlErrors = 0;
-
-  const batchSize = 5;
-  const batches = [];
-  
-  for (let i = 0; i < customers.length; i += batchSize) {
-    batches.push(customers.slice(i, i + batchSize));
-  }
-
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-    const batch = batches[batchIndex];
-    
-    const batchPromises = batch.map(async (customer) => {
-      try {
-        const isResidentHosting = customer.resident_hosting === true || customer.resident_hosting === 1;
-        const hasUsageStatsTable = await checkDatabaseExists(customer.domain, isResidentHosting);
-        
-        return {
-          ...customer,
-          database_exists: hasUsageStatsTable
-        };
-      } catch (error) {
-        console.error(`Error enriching customer ${customer.id} (${customer.domain}):`, error.message);
-        return {
-          ...customer,
-          database_exists: 'mysql_error'
-        };
-      }
-    });
-    
-    try {
-      const batchResults = await Promise.race([
-        Promise.all(batchPromises),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Batch timeout')), 60000)
-        )
-      ]);
-      
-      enrichedCustomers.push(...batchResults);
-    } catch (batchError) {
-      console.error(`Batch ${batchIndex + 1} failed:`, batchError.message);
-      
-      batch.forEach(customer => {
-        const enrichedCustomer = { ...customer };
-        enrichedCustomer.database_exists = 'batch_timeout';
-        enrichedCustomers.push(enrichedCustomer);
-        mysqlErrors++;
-      });
-    }
-  }
-
-  if (mysqlErrors > 0) {
-    console.warn(`MySQL errors occurred for ${mysqlErrors} customers`);
-  }
-  
-  return enrichedCustomers;
-}
-
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "http://backups.cetecerpdevel.com:5002");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -270,66 +114,13 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 app.get("/api/test-mysql", async (req, res) => {
-  if (!isMySQLConfigured) {
-    return res.json({ 
-      status: 'not_configured', 
-      message: 'MySQL not configured in environment variables' 
-    });
-  }
+  res.json({ 
+    status: 'deprecated', 
+    message: 'MySQL endpoint deprecated - application now uses URL validation instead of database queries',
+    environment: process.env.NODE_ENV || 'development',
+    note: 'This endpoint will be removed in a future version'
+  });
   
-  try {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const useSocket = isDevelopment && process.env.MYSQL_SOCKET;
-    const connectionMethod = useSocket ? 'cloud_sql_proxy' : 'direct_host';
-    
-    const connection = await mysql.createConnection({
-      host: useSocket ? undefined : mysqlConfig.host,
-      user: mysqlConfig.user,
-      password: mysqlConfig.password,
-      port: useSocket ? undefined : mysqlConfig.port,
-      socketPath: useSocket || undefined,
-      connectTimeout: useSocket ? 10000 : 30000
-    });
-    
-    const [rows] = await connection.execute('SELECT 1 as test');
-    
-    await connection.end();
-    
-    res.json({ 
-      status: 'success', 
-      message: 'MySQL connection and query test successful',
-      environment: process.env.NODE_ENV || 'development',
-      connection_method: connectionMethod,
-      connection_type: useSocket ? 'unix_socket' : 'tcp',
-      socket_path: useSocket || null,
-      host: useSocket ? null : mysqlConfig.host,
-      port: useSocket ? null : mysqlConfig.port,
-      user: mysqlConfig.user
-    });
-    
-  } catch (error) {
-    console.error('MySQL connection test failed:', error.message);
-    console.error('Full error:', error);
-    
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const useSocket = isDevelopment && process.env.MYSQL_SOCKET;
-    const connectionMethod = useSocket ? 'cloud_sql_proxy' : 'direct_host';
-    
-    res.json({ 
-      status: 'error', 
-      message: error.message,
-      code: error.code,
-      errno: error.errno,
-      sqlState: error.sqlState,
-      environment: process.env.NODE_ENV || 'development',
-      connection_method: connectionMethod,
-      connection_type: useSocket ? 'unix_socket' : 'tcp',
-      socket_path: useSocket || null,
-      host: useSocket ? null : mysqlConfig.host,
-      port: useSocket ? null : mysqlConfig.port,
-      user: mysqlConfig.user
-    });
-  }
 });
 
 app.get("/api/cetec/customer", async (req, res) => {
@@ -536,7 +327,8 @@ app.post("/api/backup/request", async (req, res) => {
   }
 });
 
-app.post("/api/mysql/check", async (req, res) => {
+// NEW ENDPOINT: URL validation for checking if development environment is ready
+app.post("/api/validate-environment", async (req, res) => {
   try {
     const { customerId, domain, residentHosting, itarHosting } = req.body;
     
@@ -544,27 +336,31 @@ app.post("/api/mysql/check", async (req, res) => {
       return res.status(400).json({ error: "Customer ID and domain are required" });
     }
     
-    let databaseExists = false;
+    let environmentStatus = 'unavailable';
     
     if (itarHosting || (residentHosting && !residentDBsConfig[domain])) {
-      databaseExists = 'unavailable';
+      environmentStatus = 'unavailable';
     } else {
       try {
-        let dbName = domain;
-        if (residentHosting && residentDBsConfig[domain]) {
-          dbName = residentDBsConfig[domain];
+        const develUrl = `http://${domain}.cetecerpdevel.com/auth/login_new`;
+        
+        const response = await axios.get(develUrl, {
+          timeout: 5000,
+          maxRedirects: 5,
+          validateStatus: (status) => status < 500
+        });
+
+        const finalUrl = response.request.res.responseUrl || response.config.url;
+        const isRedirectedToMainSite = finalUrl.includes('cetecerp.com') && !finalUrl.includes(domain);
+
+        if (isRedirectedToMainSite) {
+          environmentStatus = 'not_ready';
+        } else {
+          environmentStatus = 'ready';
         }
         
-        const [rows] = await mysqlPool.execute(
-          `SELECT COUNT(*) as table_count 
-           FROM information_schema.TABLES 
-           WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'usage_stats'`,
-          [dbName]
-        );
-        
-        databaseExists = rows[0].table_count > 0;
-      } catch (mysqlError) {
-        databaseExists = 'mysql_error';
+      } catch (axiosError) {
+        environmentStatus = 'not_ready';
       }
     }
     
@@ -572,15 +368,15 @@ app.post("/api/mysql/check", async (req, res) => {
       success: true,
       customerId: customerId,
       domain: domain,
-      databaseExists: databaseExists
+      environmentStatus: environmentStatus
     });
     
   } catch (error) {
-    console.error('Error in MySQL check:', error);
+    console.error('Error in environment validation:', error);
     res.status(500).json({
       success: false,
       error: error.message,
-      message: "MySQL check failed"
+      message: "Environment validation failed"
     });
   }
 });
@@ -645,10 +441,7 @@ app.post("/api/validate-link", async (req, res) => {
 app.listen(port, async () => {
   console.log(`Server running at http://backups.cetecerpdevel.com:${port}`);
   
-  if (isMySQLConfigured) {
-    await initializeMySQLPool();
-    await loadResidentDBsConfig();
-  }
+  await loadResidentDBsConfig();
 }).on('error', (error) => {
   console.error('Failed to start server:', error.message);
   if (error.code === 'EADDRINUSE') {

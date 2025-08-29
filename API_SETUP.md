@@ -75,7 +75,7 @@ Instead of raw CETEC API data, you receive enriched information:
       "id": 123,
       "name": "Customer Name",
       "domain": "customer.com",
-      "database_exists": true,
+      "database_exists": "pending_validation",
       "ok_to_bill": 1,
       "priority_support": "Enterprise",
       "resident_hosting": false,
@@ -89,16 +89,21 @@ Instead of raw CETEC API data, you receive enriched information:
   ],
   "metadata": {
     "total_customers": 344,
-    "mysql_status": "completed",
-    "mysql_enabled": true,
+    "mysql_status": "link_validation_mode",
+    "mysql_enabled": false,
+    "api_url": "https://yourdomain.cetecerp.com/api/customer?...",
     "timestamp": "2025-01-13T10:30:00.000Z",
     "summary": {
       "total_customers": 344,
-      "existing_databases": 298,
+      "pending_validation": 298,
       "resident_hosting": 23,
       "itar_hosting": 12,
-      "invalid_domains": 0,
-      "no_database": 11
+      "invalid_domains": 0
+    },
+    "processing_steps": {
+      "api_fetch": "completed",
+      "billing_filter": "completed",
+      "environment_validation": "completed"
     }
   }
 }
@@ -106,9 +111,9 @@ Instead of raw CETEC API data, you receive enriched information:
 
 ### Enhanced Fields
 
-- **`database_exists`**: Boolean indicating if backup database exists
+- **`database_exists`**: Status indicating environment readiness
 - **`lastPulled`**: Timestamp of last backup pull (if any)
-- **`mysql_status`**: Status of MySQL enrichment process
+- **`mysql_status`**: Status of environment validation process
 - **`summary`**: Statistical overview of customer data
 
 ## 🔍 Query Parameters
@@ -129,27 +134,27 @@ If no columns specified, the backend automatically requests:
 id,name,domain,ok_to_bill,priority_support,resident_hosting,test_environment,itar_hosting_bc,num_prod_users,num_full_users,techx_password
 ```
 
-## 🗄️ MySQL Integration
+## 🗄️ Environment Validation
 
-### Automatic Database Checks
+### Automatic Environment Checks
 
 The backend automatically:
 
 1. **Fetches** customer data from CETEC API
 2. **Filters** for billing-enabled customers (`ok_to_bill = 1`)
-3. **Checks** MySQL for database existence
-4. **Validates** `usage_stats` table presence
-5. **Enriches** response with database status
+3. **Validates** development environment URLs
+4. **Checks** environment accessibility and readiness
+5. **Enriches** response with environment status
 
-### Database Status Values
+### Environment Status Values
 
-- **`true`**: Database exists with `usage_stats` table
-- **`false`**: Database doesn't exist
+- **`pending_validation`**: Environment status not yet checked
+- **`ready`**: Development environment is accessible and ready
+- **`not_ready`**: Environment exists but not accessible
 - **`resident_hosting`**: Customer uses resident hosting
 - **`itar_hosting`**: Customer uses ITAR hosting
-- **`unavailable`**: ITAR or resident hosting without database mapping
-- **`mysql_error`**: MySQL connection failed
-- **`batch_timeout`**: Database check timed out
+- **`unavailable`**: ITAR or resident hosting without environment mapping
+- **`invalid_domain`**: Customer has no valid domain
 
 ## 🔐 Security Features
 
@@ -222,7 +227,15 @@ npm run dev:full
 curl "http://backups.cetecerpdevel.com:5001/api/cetec/customer?preshared_token=YOUR_TOKEN"
 ```
 
-### 3. Check MySQL Connection
+### 3. Test Environment Validation
+
+```bash
+curl -X POST "http://backups.cetecerpdevel.com:5001/api/validate-environment" \
+  -H "Content-Type: application/json" \
+  -d '{"customerId": "123", "domain": "example.com", "residentHosting": false, "itarHosting": false}'
+```
+
+### 4. Check Deprecated MySQL Endpoint
 
 ```bash
 curl "http://backups.cetecerpdevel.com:5001/api/test-mysql"
