@@ -109,8 +109,6 @@ body {
   opacity: 0.8;
 }
 
-
-
 .devel-button.invalid {
   background-color: var(--danger-color);
   color: white;
@@ -179,14 +177,6 @@ body {
   color: var(--text-primary);
 }
 
-
-
-
-
-
-
-
-
 /* Loading placeholders to maintain consistent layout */
 .loading-placeholder {
   flex: 1;
@@ -237,8 +227,6 @@ body {
   z-index: 10;
 }
 
-
-
 /* Error State */
 .error-container {
   text-align: center;
@@ -253,10 +241,6 @@ body {
   justify-content: center;
   align-items: center;
 }
-
-
-
-
 
 /* Table Headers */
 .table-header {
@@ -373,8 +357,6 @@ body {
   flex: 1;
 }
 
-
-
 .search-input {
   padding: 8px 12px;
   border: 1px solid var(--border-color);
@@ -400,8 +382,6 @@ body {
 .search-input::placeholder {
   color: var(--text-muted);
 }
-
-
 
 .filter-toggle-btn {
   background-color: var(--text-muted);
@@ -706,8 +686,6 @@ body {
   height: auto; /* Allow natural height for baseline alignment */
 }
 
-
-
 /* Responsive design for smaller screens */
 @media (max-width: 1200px) {
   .combined-header-section {
@@ -767,8 +745,6 @@ body {
     font-size: 14px;
   }
 }
-
-
 
 .summary-item {
   display: flex;
@@ -922,7 +898,6 @@ body {
   max-height: 16px;
 }
 
-
 /* Priority Support Chips */
 .priority-chips {
   display: flex;
@@ -973,8 +948,6 @@ body {
   white-space: nowrap;
 }
 
-
-
 .refresh-button {
   background: var(--accent-primary);
   color: white;
@@ -1023,8 +996,6 @@ body {
   max-width: none;
   overflow: visible;
 }
-
-
 
 .cards-grid {
   display: flex;
@@ -1117,8 +1088,6 @@ body {
   flex-shrink: 0;
 }
 
-
-
 /* Priority Chip Container */
 .priority-chip-container {
   display: flex;
@@ -1133,8 +1102,6 @@ body {
   flex: 0 0 120px;
   order: 2;
 }
-
-
 
 /* Summary Chips */
 .summary-value {
@@ -1160,12 +1127,6 @@ body {
 .summary-value.danger {
   background: var(--danger-color);
 }
-
-
-
-
-
-
 
 /* Card Actions */
 .card-actions {
@@ -1242,8 +1203,6 @@ body {
   position: relative;
   z-index: 1;
 }
-
-
 
 .polling-spinner {
   width: 16px;
@@ -1334,10 +1293,6 @@ body {
   opacity: 0.6;
 }
 
-
-
-
-
 .devel-button {
   background: var(--text-muted);
   color: white;
@@ -1426,8 +1381,6 @@ body {
     gap: 10px;
   }
 }
-
-
 
 @media (max-width: 768px) {
   .cards-grid {
@@ -1528,5 +1481,3 @@ body {
 .retry-button:hover {
   background-color: var(--accent-hover);
 }
-
-

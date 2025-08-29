@@ -138,7 +138,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           onClick={() => window.open(customerUrl, '_blank')}
           title="Open devel environment"
         >
-          Devel
+          Devel ↗
         </button>
       );
     }
@@ -152,7 +152,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           onClick={() => window.open(customerUrl, '_blank')}
           title="Open devel environment"
         >
-          Devel
+          Devel ↗
         </button>
         );
     }
@@ -166,7 +166,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         return (
           <button className="devel-button pending" disabled title="Validating devel environment...">
             <span className="spinner"></span>
-            Pending
+            Pending ↗
           </button>
         );
       }
@@ -188,7 +188,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           title="Click to validate devel environment"
         >
           <span className="spinner"></span>
-          Pending
+          Pending ↗
         </button>
       );
     }
