@@ -63,11 +63,11 @@ export class ConfigLoader {
 
   public getValue<T>(path: string): T | undefined {
     const keys = path.split('.');
-    let current: any = this.config;
+    let current: Record<string, unknown> = this.config;
     
     for (const key of keys) {
       if (current && typeof current === 'object' && key in current) {
-        current = current[key];
+        current = current[key] as Record<string, unknown>;
       } else {
         return undefined;
       }

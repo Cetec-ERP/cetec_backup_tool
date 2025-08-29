@@ -1,17 +1,21 @@
 import React, { useState, useCallback } from 'react';
 import CustomerCard from './CustomerCard';
 
+interface Customer {
+  id: string | number;
+  name: string;
+  domain: string;
+  database_exists: boolean | string | null;
+  itar_hosting_bc?: boolean;
+  resident_hosting?: boolean;
+  priority_support?: string;
+  lastPulled?: string;
+}
+
 interface DataTableProps {
-  data: any[];
-  onTimestampUpdate: (customerId: string, timestamp: string, databaseExists?: any) => void;
-  onDatabaseStatusUpdate: (customerId: string, databaseExists: any) => void;
-  validationCache?: Map<string, { 
-    reachable: boolean | undefined; 
-    status?: number; 
-    error?: string; 
-    finalUrl?: string;
-    reason?: string;
-  }>;
+  data: Customer[];
+  onTimestampUpdate: (customerId: string, timestamp: string, databaseExists?: boolean | string) => void;
+  onDatabaseStatusUpdate: (customerId: string, databaseExists: boolean | string) => void;
   addToValidationQueue: (customerId: string) => void;
   isValidationActive: boolean;
   activeValidations?: Set<string>;
@@ -21,7 +25,6 @@ const DataTable: React.FC<DataTableProps> = ({
   data, 
   onTimestampUpdate, 
   onDatabaseStatusUpdate, 
-  validationCache,
   addToValidationQueue,
   isValidationActive,
   activeValidations
@@ -29,12 +32,10 @@ const DataTable: React.FC<DataTableProps> = ({
   const [hiddenDevelButtons, setHiddenDevelButtons] = useState<Set<string>>(new Set());
   const [pollingEnvironments, setPollingEnvironments] = useState<Set<string>>(new Set());
 
-  const startEnvironmentPolling = async (item: any, dbName: string) => {
+  const startEnvironmentPolling = useCallback(async (item: Customer, dbName: string) => {
     const maxPollingTime = 30 * 60 * 1000; // 30 minutes maximum
     const pollInterval = 60 * 1000; // 1 minute
     const startTime = Date.now();
-    
-
     
     const pollEnvironment = async () => {
       try {
@@ -86,7 +87,7 @@ const DataTable: React.FC<DataTableProps> = ({
                 default:
                   databaseStatus = false;
               }
-              onDatabaseStatusUpdate(item.id, databaseStatus);
+              onDatabaseStatusUpdate(item.id as string, databaseStatus);
             }
 
             if (environmentStatus === 'ready') {
@@ -108,12 +109,11 @@ const DataTable: React.FC<DataTableProps> = ({
                 });
                 return;
               }
-              // Continue polling to ensure stability
             }
           }
         }
         
-        // Schedule next poll if environment is not yet ready
+        // Continue polling
         setTimeout(pollEnvironment, pollInterval);
         
       } catch (error) {
@@ -123,13 +123,9 @@ const DataTable: React.FC<DataTableProps> = ({
     };
     
     setTimeout(pollEnvironment, pollInterval);
-  };
+  }, [onDatabaseStatusUpdate]);
 
-  if (!data || data.length === 0) {
-    return <div className="no-data">No data available</div>;
-  }
-
-  const handleActionClick = useCallback(async (item: any) => {
+  const handleActionClick = useCallback(async (item: Customer) => {
     // Check if already polling to prevent duplicate calls
     if (pollingEnvironments.has(String(item.id))) {
       return;
@@ -157,7 +153,7 @@ const DataTable: React.FC<DataTableProps> = ({
       } else {
         const timestampData = await timestampResponse.json();
         if (timestampData.success && onTimestampUpdate) {
-          onTimestampUpdate(item.id, timestampData.timestamp);
+          onTimestampUpdate(item.id as string, timestampData.timestamp, item.database_exists || undefined);
         }
       }
       
@@ -208,7 +204,11 @@ const DataTable: React.FC<DataTableProps> = ({
         return newSet;
       });
     }
-  }, [onTimestampUpdate]);
+  }, [onTimestampUpdate, pollingEnvironments, startEnvironmentPolling]);
+
+  if (!data || data.length === 0) {
+    return <div className="no-data">No data available</div>;
+  }
 
   return (
     <div className="customer-cards-container">
@@ -221,8 +221,6 @@ const DataTable: React.FC<DataTableProps> = ({
             hiddenDevelButtons={hiddenDevelButtons}
             isPolling={pollingEnvironments.has(String(item.id))}
             onActionClick={handleActionClick}
-            onDatabaseStatusUpdate={onDatabaseStatusUpdate}
-            validationCache={validationCache}
             addToValidationQueue={addToValidationQueue}
             isValidationActive={isValidationActive}
             activeValidations={activeValidations}

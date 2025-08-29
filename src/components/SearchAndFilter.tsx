@@ -1,9 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import residentDBsConfig from '../config/resident-dbs.json';
 
+interface Customer {
+  id: string | number;
+  name: string;
+  domain: string;
+  database_exists: boolean | string | null;
+  itar_hosting_bc?: boolean;
+  resident_hosting?: boolean;
+  priority_support?: string;
+  test_environment?: boolean | string;
+}
+
 interface SearchAndFilterProps {
-  data: any[];
-  onFilterChange: (filteredData: any[]) => void;
+  data: Customer[];
+  onFilterChange: (filteredData: Customer[]) => void;
   onRefresh: () => void;
   loading: boolean;
 }
@@ -63,8 +74,9 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange,
     
     const values = new Set<string>();
     data.forEach(item => {
-      if (item[column] !== undefined && item[column] !== null && item[column] !== '') {
-        let value = String(item[column]);
+      const itemValue = item[column as keyof Customer];
+      if (itemValue !== undefined && itemValue !== null && itemValue !== '') {
+        let value = String(itemValue);
         
         if (column === 'priority_support') {
           value = normalizePrioritySupport(value);
