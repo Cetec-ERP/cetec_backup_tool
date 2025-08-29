@@ -14,6 +14,7 @@
     "dev:custom": "node start-dev.js",
     "kill:ports": "kill-port 5001 5002",
     "build": "tsc -b && vite build",
+    "build:skip-types": "vite build",
     "build:local": "tsc -b && vite build --config vite.config.local.ts",
     "build:prod": "tsc -b && vite build --config vite.config.prod.ts",
     "lint": "eslint .",
