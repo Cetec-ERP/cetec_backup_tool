@@ -18,20 +18,20 @@ interface DataTableProps {
 
 const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDatabaseStatusUpdate, validationCache }) => {
   const [hiddenDevelButtons, setHiddenDevelButtons] = useState<Set<string>>(new Set());
-  const [pollingCustomers, setPollingCustomers] = useState<Set<string>>(new Set());
+  const [pollingEnvironments, setPollingEnvironments] = useState<Set<string>>(new Set());
 
-  const startDatabasePolling = async (item: any, dbName: string) => {
+  const startEnvironmentPolling = async (item: any, dbName: string) => {
     const maxPollingTime = 30 * 60 * 1000; // 30 minutes maximum
     const pollInterval = 60 * 1000; // 1 minute
     const startTime = Date.now();
     
 
     
-    const pollDatabase = async () => {
+    const pollEnvironment = async () => {
       try {
         // Check if we've exceeded maximum polling time
         if (Date.now() - startTime > maxPollingTime) {
-          setPollingCustomers(prev => {
+          setPollingEnvironments(prev => {
             const newSet = new Set(prev);
             newSet.delete(String(item.id));
             return newSet;
@@ -39,9 +39,9 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
           return;
         }
         
-        // Check database status
+        // Check environment status using URL validation instead of MySQL
         const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
-        const mysqlCheckResponse = await fetch(`${apiBaseUrl}/mysql/check`, {
+        const environmentResponse = await fetch(`${apiBaseUrl}/validate-environment`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -54,30 +54,45 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
           }),
         });
 
-        if (mysqlCheckResponse.ok) {
-          const mysqlResult = await mysqlCheckResponse.json();
+        if (environmentResponse.ok) {
+          const environmentResult = await environmentResponse.json();
 
-          if (mysqlResult.success) {
-            const databaseExists = mysqlResult.databaseExists;
+          if (environmentResult.success) {
+            const environmentStatus = environmentResult.environmentStatus;
             const timeSinceStart = Date.now() - startTime;
 
             if (onDatabaseStatusUpdate) {
-              onDatabaseStatusUpdate(item.id, databaseExists);
+              // Map environment status to database status for compatibility
+              let databaseStatus;
+              switch (environmentStatus) {
+                case 'ready':
+                  databaseStatus = true;
+                  break;
+                case 'not_ready':
+                  databaseStatus = false;
+                  break;
+                case 'unavailable':
+                  databaseStatus = 'unavailable';
+                  break;
+                default:
+                  databaseStatus = false;
+              }
+              onDatabaseStatusUpdate(item.id, databaseStatus);
             }
 
-            if (databaseExists !== 'unavailable' && databaseExists !== false) {
-              // Database exists, but let's continue polling for a bit to ensure it's stable
-              // This handles cases where the external backup service might drop/recreate the database
+            if (environmentStatus === 'ready') {
+              // Environment is ready, but let's continue polling for a bit to ensure it's stable
+              // This handles cases where the external backup service might drop/recreate the environment
               const stableTime = 2 * 60 * 1000; // 2 minutes of stability
               
               if (timeSinceStart > stableTime) {
-                // Database has been stable for 2 minutes, stop polling
+                // Environment has been stable for 2 minutes, stop polling
                 setHiddenDevelButtons(prev => {
                   const newSet = new Set(prev);
                   newSet.delete(String(item.id));
                   return newSet;
                 });
-                setPollingCustomers(prev => {
+                setPollingEnvironments(prev => {
                   const newSet = new Set(prev);
                   newSet.delete(String(item.id));
                   return newSet;
@@ -89,16 +104,16 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
           }
         }
         
-        // Schedule next poll if database is not yet available
-        setTimeout(pollDatabase, pollInterval);
+        // Schedule next poll if environment is not yet ready
+        setTimeout(pollEnvironment, pollInterval);
         
       } catch (error) {
-        console.error(`Database polling error for ${item.name} (${dbName}):`, error);
-        setTimeout(pollDatabase, pollInterval);
+        console.error(`Environment polling error for ${item.name} (${dbName}):`, error);
+        setTimeout(pollEnvironment, pollInterval);
       }
     };
     
-    setTimeout(pollDatabase, pollInterval);
+    setTimeout(pollEnvironment, pollInterval);
   };
 
   if (!data || data.length === 0) {
@@ -107,7 +122,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
 
   const handleActionClick = useCallback(async (item: any) => {
     // Check if already polling to prevent duplicate calls
-    if (pollingCustomers.has(String(item.id))) {
+    if (pollingEnvironments.has(String(item.id))) {
       return;
     }
     
@@ -117,7 +132,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
     }
     
     try {
-      setPollingCustomers(prev => new Set(prev).add(String(item.id)));
+      setPollingEnvironments(prev => new Set(prev).add(String(item.id)));
       
       const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
       const timestampResponse = await fetch(`${apiBaseUrl}/pull/record`, {
@@ -171,14 +186,14 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
           console.error(`Backup request error for ${item.name}:`, error);
         });
         
-        startDatabasePolling(item, dbName);
+        startEnvironmentPolling(item, dbName);
       };
       
       handleBackupRequest();
       
     } catch (error) {
       console.error('Error in backup process:', error);
-      setPollingCustomers(prev => {
+      setPollingEnvironments(prev => {
         const newSet = new Set(prev);
         newSet.delete(String(item.id));
         return newSet;
@@ -195,7 +210,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, onTimestampUpdate, onDataba
             key={item.id}
             item={item}
             hiddenDevelButtons={hiddenDevelButtons}
-            isPolling={pollingCustomers.has(String(item.id))}
+            isPolling={pollingEnvironments.has(String(item.id))}
             onActionClick={handleActionClick}
             onDatabaseStatusUpdate={onDatabaseStatusUpdate}
             validationCache={validationCache}
