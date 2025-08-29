@@ -110,97 +110,73 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ data, onFilterChange,
   };
 
   const hasResidentDatabase = (domain: string): boolean => {
-    if (!residentDBsConfig || !domain) {
-      return false;
-    }
-    
-    const hasDB = domain.toLowerCase() in residentDBsConfig || 
-           Object.keys(residentDBsConfig).some(key => key.toLowerCase() === domain.toLowerCase());
-    
-    return hasDB;
+    return residentDBsConfig.some(db => db.domain === domain);
+  };
+
+  const applyFilters = () => {
+    let filtered = data.filter(item => {
+      // Search term filter
+      if (searchTerm.trim()) {
+        const searchLower = searchTerm.toLowerCase();
+        const nameMatch = item.name.toLowerCase().includes(searchLower);
+        const domainMatch = item.domain.toLowerCase().includes(searchLower);
+        if (!nameMatch && !domainMatch) {
+          return false;
+        }
+      }
+
+      // Priority support filter
+      if (filters.priority_support) {
+        const itemPriority = normalizePrioritySupport(String(item.priority_support || ''));
+        if (itemPriority !== filters.priority_support) {
+          return false;
+        }
+      }
+
+      // Resident hosting filter
+      if (filters.resident_hosting) {
+        const itemValue = item.resident_hosting;
+        if (filters.resident_hosting === '1') {
+          return itemValue === 1 || itemValue === true;
+        } else if (filters.resident_hosting === '0') {
+          return itemValue !== 1 && itemValue !== true;
+        }
+      }
+
+      // Test environment filter
+      if (filters.test_environment) {
+        const itemValue = item.test_environment;
+        if (filters.test_environment === 'true') {
+          return itemValue === 1 || itemValue === true;
+        } else if (filters.test_environment === 'false') {
+          return !itemValue || itemValue === 0 || itemValue === '0' || itemValue === false || itemValue === null || itemValue === undefined || itemValue === '';
+        }
+      }
+
+      // Database exists filter
+      if (filters.database_exists) {
+        const itemValue = String(item.database_exists || '');
+        if (itemValue !== filters.database_exists) {
+          return false;
+        }
+      }
+
+      // ITAR hosting filter
+      if (filters.itar_hosting_bc) {
+        const itemValue = String(item.itar_hosting_bc || '');
+        if (itemValue !== filters.itar_hosting_bc) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    onFilterChange(filtered);
   };
 
   useEffect(() => {
-    let filteredData = [...data];
-
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
-      filteredData = filteredData.filter(item => {
-        const name = String(item.name || '').toLowerCase();
-        const domain = String(item.domain || '').toLowerCase();
-        return name.includes(searchLower) || domain.includes(searchLower);
-      });
-    }
-
-    Object.entries(filters).forEach(([column, value]) => {
-      if (value && value !== '') {
-        filteredData = filteredData.filter(item => {
-          if (column === 'priority_support') {
-            const normalizedItemValue = normalizePrioritySupport(String(item[column] || ''));
-            return normalizedItemValue === value;
-          } else if (column === 'resident_hosting') {
-            const filterValue = parseInt(value);
-            const itemValue = item[column];
-            
-            if (filterValue === 1) {
-              return itemValue === 1 || itemValue === true;
-            } else if (filterValue === 0) {
-              return itemValue !== 1 && itemValue !== true;
-            }
-            return true;
-          } else if (column === 'database_exists') {
-            const itemValue = item[column];
-            
-            if (value === 'true') {
-              return itemValue === true;
-            } else if (value === 'false') {
-              return itemValue === false;
-            } else if (value === 'unavailable') {
-              const isItarHosting = Boolean(item.itar_hosting_bc);
-              const isResidentHosting = Boolean(item.resident_hosting);
-              const domain = item.domain;
-              
-              if (isItarHosting) {
-                return true;
-              }
-              
-              if (isResidentHosting && domain) {
-                return !hasResidentDatabase(domain);
-              }
-              
-              return false;
-            } else if (value === 'resident_hosting') {
-              return itemValue === 'resident_hosting';
-            } else if (value === 'itar_hosting') {
-              return itemValue === 'itar_hosting';
-            }
-            return true;
-          } else if (column === 'itar_hosting_bc') {
-            const filterValue = value === 'true';
-            const itemValue = item[column];
-            
-            if (filterValue === true) {
-              return itemValue;
-            } else if (filterValue === false) {
-              return !itemValue;
-            }
-            return true;
-          } else if (column === 'test_environment') {
-            if (value === 'false') {
-              const itemValue = item[column];
-              return !itemValue || itemValue === 0 || itemValue === '0' || itemValue === false || itemValue === null || itemValue === undefined || itemValue === '';
-            } else {
-              return String(item[column] || '') === value;
-            }
-          } else {
-            const itemValue = String(item[column] || '');
-            return itemValue === value;
-          }
-        });
-      }
-    });
-
-    onFilterChange(filteredData);
+    applyFilters();
   }, [searchTerm, filters, data, onFilterChange]);
 
   const clearAllFilters = () => {
