@@ -156,6 +156,25 @@ const App: React.FC = () => {
       );
       return updatedFilteredData;
     });
+
+    // Update validation cache when database status changes
+    if (databaseExists === true) {
+      // Find the customer to get their domain
+      const customer = data.find(c => c.id === customerId);
+      if (customer && customer.domain) {
+        setValidationCache(prevCache => {
+          const newCache = new Map(prevCache);
+          // Mark the domain as reachable since we now know the database exists
+          newCache.set(customer.domain, {
+            domain: customer.domain,
+            reachable: true,
+            status: 200,
+            finalUrl: `http://${customer.domain}.cetecerpdevel.com/auth/login_new`
+          });
+          return newCache;
+        });
+      }
+    }
   };
 
   // Calculate summary statistics including validation results
@@ -169,6 +188,14 @@ const App: React.FC = () => {
 
   const resetCache = () => {
     setValidationCache(new Map());
+  };
+
+  const clearDomainFromCache = (domain: string) => {
+    setValidationCache(prevCache => {
+      const newCache = new Map(prevCache);
+      newCache.delete(domain);
+      return newCache;
+    });
   };
 
   // Batch validation function to efficiently validate multiple domains at once
