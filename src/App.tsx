@@ -25,7 +25,7 @@ interface Customer {
 
 interface ValidationResult {
   domain: string;
-  reachable: boolean;
+  reachable: boolean | undefined;
   status?: number;
   error?: string;
   finalUrl?: string;
@@ -160,31 +160,26 @@ const App: React.FC = () => {
 
   // Calculate summary statistics including validation results
   const getSummaryStats = () => {
-    const total = filteredData.length;
-    const residentHosting = filteredData.filter((customer: any) => customer.resident_hosting === true || customer.resident_hosting === 1).length;
-    const itarHosting = filteredData.filter((customer: any) => {
-      const itarValue = customer.itar_hosting_bc;
-      return itarValue === true || itarValue === 1 || 
-             (typeof itarValue === 'string' && itarValue.toLowerCase().includes('itar')) ||
-             (itarValue && itarValue !== '' && itarValue !== 'false' && itarValue !== 0);
-    }).length;
+    const total = data.length;
+    const residentHosting = data.filter(item => item.resident_hosting).length;
+    const itarHosting = data.filter(item => item.itar_hosting_bc).length;
     
-    // Log summary calculations for debugging
-    console.log(`📊 [Summary Stats] Total: ${total}, Resident: ${residentHosting}, ITAR: ${itarHosting}`);
-             
     return { total, residentHosting, itarHosting };
+  };
+
+  const resetCache = () => {
+    setValidationCache(new Map());
   };
 
   // Batch validation function to efficiently validate multiple domains at once
   const batchValidateDomains = useCallback(async (customers: Customer[]) => {
-    // Collect all unique domains that need validation
     const domainsToValidate = new Set<string>();
     
     customers.forEach(customer => {
       if (customer.domain && 
           customer.domain.trim() !== '' && 
           customer.domain !== 'undefined' &&
-          !customer.itar_hosting_bc &&
+          !customer.itar_hosting_bc && 
           !customer.resident_hosting &&
           (customer.database_exists === 'pending_validation' || 
            customer.database_exists === false || 
@@ -195,21 +190,17 @@ const App: React.FC = () => {
       }
     });
 
-    // Filter out domains that are already in cache
     const uncachedDomains = Array.from(domainsToValidate).filter(domain => !validationCache.has(domain));
     
     if (uncachedDomains.length === 0) {
-      console.log('🔄 [Batch Validation] All domains already validated, skipping validation');
       return;
     }
 
-    console.log(`🔄 [Batch Validation] Starting validation for ${uncachedDomains.length} domains:`, uncachedDomains);
     setIsValidating(true);
 
     try {
       const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
       
-      // Validate each domain individually (could be optimized to batch API calls if backend supports it)
       const validationPromises = uncachedDomains.map(async (domain) => {
         try {
           const response = await axios.post(`${apiBaseUrl}/validate-link`, { domain }, { timeout: 10000 });
@@ -222,10 +213,9 @@ const App: React.FC = () => {
             reason: response.data.reason
           };
         } catch (error: any) {
-          console.error(`🚨 [Batch Validation] Failed to validate ${domain}:`, error.message);
           return {
             domain,
-            reachable: false,
+            reachable: undefined,
             error: error.message,
             reason: 'api_error'
           };
@@ -233,23 +223,18 @@ const App: React.FC = () => {
       });
 
       const results = await Promise.all(validationPromises);
+
+      // Only filter out results that are truly failed (undefined reachable)
+      // Timeout errors might still have valid validation data from previous attempts
+      const successfulResults = results.filter(result => result.reachable !== undefined);
+      const failedResults = results.filter(result => result.reachable === undefined);
       
-      // Update validation cache with new results
+      // Update cache with successful results (including failed validations like redirects)
       const newCache = new Map(validationCache);
-      results.forEach(result => {
+      successfulResults.forEach(result => {
         newCache.set(result.domain, result);
-        // Log detailed results for debugging
-        if (result.reachable) {
-          console.log(`✅ [Batch Validation] ${result.domain}: SUCCESS (Status: ${result.status}, Final URL: ${result.finalUrl})`);
-        } else {
-          if (result.reason === 'redirected_to_main_site') {
-            console.log(`❌ [Batch Validation] ${result.domain}: FAILED - Redirects to main site (Final URL: ${result.finalUrl})`);
-          } else {
-            console.log(`❌ [Batch Validation] ${result.domain}: FAILED (Reason: ${result.reason}, Final URL: ${result.finalUrl || 'N/A'})`);
-          }
-        }
       });
-      
+
       setValidationCache(newCache);
       
       // Update customer data with validation results
@@ -268,10 +253,8 @@ const App: React.FC = () => {
         return customer;
       }));
 
-      console.log(`✅ [Batch Validation] Completed validation for ${results.length} domains`);
-      
     } catch (error) {
-      console.error('🚨 [Batch Validation] Batch validation failed:', error);
+      console.error('Batch validation failed:', error);
     } finally {
       setIsValidating(false);
     }
@@ -328,6 +311,24 @@ const App: React.FC = () => {
               onRefresh={startBackupProcess}
               loading={loading}
             />
+          
+            {/* Cache reset button for debugging */}
+            <button 
+              onClick={resetCache}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                marginLeft: '12px'
+              }}
+              title="Reset validation cache for debugging"
+            >
+              Reset Cache
+            </button>
           
             {filteredData.length > 0 && (() => {
               const stats = getSummaryStats();
