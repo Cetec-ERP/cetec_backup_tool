@@ -1,51 +1,36 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { config } from './config';
-import DataTable from './components/DataTable';
-import SearchAndFilter from './components/SearchAndFilter';
-import DarkModeToggle from './components/DarkModeToggle';
 import './App.css';
+import SearchAndFilter from './components/SearchAndFilter';
+import DataTable from './components/DataTable';
+import DarkModeToggle from './components/DarkModeToggle';
+import { config } from './config';
 
+// Define proper interfaces for type safety
 interface Customer {
-  id: string;
+  id: string | number;
   name: string;
   domain: string;
-  database_exists: any;
-  itar_hosting_bc?: any;
-  resident_hosting?: any;
-  total_users?: any;
-  ok_to_bill?: any;
-  priority_support?: any;
-  test_environment?: any;
-  lastPulled?: any;
+  database_exists: boolean | string | null;
+  itar_hosting_bc?: boolean;
+  resident_hosting?: boolean;
+  total_users?: number;
+  ok_to_bill?: boolean;
+  priority_support?: string;
+  test_environment?: boolean | string;
+  lastPulled?: string;
   validation_status?: string;
   validation_error?: string;
-  // ... other properties
-}
-
-interface ValidationResult {
-  domain: string;
-  reachable: boolean | undefined;
-  status?: number;
-  error?: string;
-  finalUrl?: string;
-  reason?: string;
 }
 
 const App: React.FC = () => {
   const [data, setData] = useState<Customer[]>([]);
   const [filteredData, setFilteredData] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPriority, setSelectedPriority] = useState<string>('all');
-  const [hiddenDevelButtons, setHiddenDevelButtons] = useState<Set<string>>(new Set());
-  const [pollingCustomers, setPollingCustomers] = useState<Set<string>>(new Set());
-  const [validationCache, setValidationCache] = useState<Map<string, ValidationResult>>(new Map());
-  const [isValidating, setIsValidating] = useState(false);
   const [validationQueue, setValidationQueue] = useState<Set<string>>(new Set());
   const [activeValidations, setActiveValidations] = useState<Set<string>>(new Set());
-
+  
   // Ref to prevent multiple simultaneous queue processing
   const isProcessingQueue = useRef(false);
   
@@ -225,7 +210,7 @@ const App: React.FC = () => {
       
       const response = await axios.get(url, { timeout: 60000 });
       
-      let customersToSort = [];
+      let customersToSort: Customer[] = [];
       
       if (response.data && response.data.customers && Array.isArray(response.data.customers)) {
         customersToSort = response.data.customers;
@@ -243,7 +228,7 @@ const App: React.FC = () => {
         return;
       }
       
-      const sortedCustomers = customersToSort.sort((a: any, b: any) => {
+      const sortedCustomers = customersToSort.sort((a: Customer, b: Customer) => {
         const nameA = (a.name || '').toLowerCase();
         const nameB = (b.name || '').toLowerCase();
         return nameA.localeCompare(nameB);
@@ -252,20 +237,27 @@ const App: React.FC = () => {
       setData(sortedCustomers);
       setFilteredData(sortedCustomers);
       
-      // Don't run batch validation here - let individual cards validate themselves
-      // This allows the UI to render immediately while validation happens in background
-      
       setLoading(false);
-    } catch (err: any) {
-      console.error('Error during backup process:', err);
+    } catch (err: unknown) {
+      let errorMessage = 'An error occurred during backup';
       
-      let errorMessage = err.message || 'An error occurred during backup';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
       
-      if (err.code === 'ECONNABORTED') {
-        errorMessage = 'Request timed out. Please check your nework connection and try again.';
-      } else if (err.response?.status === 500) {
-        errorMessage = 'Server error occurred. Please try again.';
-      } else if (err.message?.includes('Network Error')) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        if (err.code === 'ECONNABORTED') {
+          errorMessage = 'Request timed out. Please check your network connection and try again.';
+        }
+      }
+      
+      if (err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'status' in err.response) {
+        if (err.response.status === 500) {
+          errorMessage = 'Server error occurred. Please try again.';
+        }
+      }
+      
+      if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string' && err.message.includes('Network Error')) {
         errorMessage = 'Network error. Please check your connection and try again.';
       }
       
@@ -280,7 +272,7 @@ const App: React.FC = () => {
 
 
 
-  const handleTimestampUpdate = (customerId: string, timestamp: string, databaseExists?: any) => {
+  const handleTimestampUpdate = (customerId: string, timestamp: string, databaseExists?: boolean | string) => {
     setData(prevData => {
       const updatedData = prevData.map(customer => 
         customer.id === customerId 
@@ -308,7 +300,7 @@ const App: React.FC = () => {
     });
   };
 
-  const handleDatabaseStatusUpdate = (customerId: string, databaseExists: any) => {
+  const handleDatabaseStatusUpdate = (customerId: string, databaseExists: boolean | string) => {
     setData(prevData => {
       const updatedData = prevData.map(customer => 
         customer.id === customerId 
@@ -326,25 +318,6 @@ const App: React.FC = () => {
       );
       return updatedFilteredData;
     });
-
-    // Update validation cache when database status changes
-    if (databaseExists === true) {
-      // Find the customer to get their domain
-      const customer = data.find(c => c.id === customerId);
-      if (customer && customer.domain) {
-        setValidationCache(prevCache => {
-          const newCache = new Map(prevCache);
-          // Mark the domain as reachable since we now know the database exists
-          newCache.set(customer.domain, {
-            domain: customer.domain,
-            reachable: true,
-            status: 200,
-            finalUrl: `http://${customer.domain}.cetecerpdevel.com/auth/login_new`
-          });
-          return newCache;
-        });
-      }
-    }
   };
 
   // Calculate summary statistics including validation results
@@ -440,7 +413,6 @@ const App: React.FC = () => {
           data={filteredData} 
           onTimestampUpdate={handleTimestampUpdate}
           onDatabaseStatusUpdate={handleDatabaseStatusUpdate}
-          validationCache={validationCache}
           addToValidationQueue={addToValidationQueue}
           isValidationActive={activeValidations.size > 0}
           activeValidations={activeValidations}

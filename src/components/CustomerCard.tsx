@@ -1,19 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+
+interface Customer {
+  id: string | number;
+  name: string;
+  domain: string;
+  database_exists: boolean | string | null;
+  itar_hosting_bc?: boolean;
+  resident_hosting?: boolean;
+  priority_support?: string;
+  lastPulled?: string;
+  techx_password?: string;
+  test_environment?: boolean | string;
+  num_prod_users?: number;
+  num_full_users?: number;
+}
 
 interface CustomerCardProps {
-  item: any;
+  item: Customer;
   hiddenDevelButtons: Set<string>;
   isPolling: boolean;
-  onActionClick: (item: any) => void;
-  onDatabaseStatusUpdate?: (customerId: string, databaseExists: any) => void;
-  validationCache?: Map<string, { 
-    reachable: boolean | undefined; 
-    status?: number; 
-    error?: string; 
-    finalUrl?: string;
-    reason?: string;
-  }>;
+  onActionClick: (item: Customer) => void;
   addToValidationQueue: (customerId: string) => void;
   isValidationActive: boolean;
   activeValidations?: Set<string>;
@@ -24,8 +30,6 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   hiddenDevelButtons, 
   isPolling, 
   onActionClick,
-  onDatabaseStatusUpdate,
-  validationCache,
   addToValidationQueue,
   isValidationActive,
   activeValidations
@@ -98,25 +102,6 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       return () => clearTimeout(timeoutId);
     }
   }, [item.database_exists, hasQueuedValidation, activeValidations, item.id, item.domain, item.itar_hosting_bc, addToValidationQueue]);
-
-  // Get validation status from cache instead of individual validation
-  const getValidationStatus = () => {
-    if (!validationCache || !item.domain) {
-      return 'pending';
-    }
-    
-    const result = validationCache.get(item.domain);
-    if (!result) {
-      return 'pending';
-    }
-    
-    if (result.reachable) return 'valid';
-    if (result.reason === 'redirected_to_main_site') return 'redirected';
-    if (result.error || result.reason === 'api_error') return 'error';
-    return 'invalid';
-  };
-
-  const linkValidationStatus = getValidationStatus();
 
   const renderDevelButton = () => {
     const domain = item.domain;
@@ -372,19 +357,21 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     const isResidentHosting = Boolean(item.resident_hosting);
     
     if (!isResidentHosting) {
-      if (!testEnvironment || testEnvironment === '0' || testEnvironment === 0) {
+      if (!testEnvironment || testEnvironment === '0' || testEnvironment === false) {
         return null;
       }
     }
 
     let buttonText = 'Test ↗';
-    if (testEnvironment && testEnvironment !== '0' && testEnvironment !== 0) {
-      if (testEnvironment === 'Update Nightly') {
-        buttonText = 'Test (nightly) ↗';
-      } else if (testEnvironment === 'Pause Updates') {
-        buttonText = 'Test (paused) ↗';
-      } else if (testEnvironment === 'Update Weekly') {
-        buttonText = 'Test (weekly) ↗';
+    if (testEnvironment && testEnvironment !== '0' && testEnvironment !== false) {
+      if (typeof testEnvironment === 'string') {
+        if (testEnvironment === 'Update Nightly') {
+          buttonText = 'Test (nightly) ↗';
+        } else if (testEnvironment === 'Pause Updates') {
+          buttonText = 'Test (paused) ↗';
+        } else if (testEnvironment === 'Update Weekly') {
+          buttonText = 'Test (weekly) ↗';
+        }
       }
     }
 
