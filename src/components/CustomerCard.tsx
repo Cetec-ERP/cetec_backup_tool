@@ -138,7 +138,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           onClick={() => window.open(customerUrl, '_blank')}
           title="Open devel environment"
         >
-          Devel ↗
+          Devel {renderExternalLinkIcon()}
         </button>
       );
     }
@@ -152,7 +152,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           onClick={() => window.open(customerUrl, '_blank')}
           title="Open devel environment"
         >
-          Devel ↗
+          Devel {renderExternalLinkIcon()}
         </button>
         );
     }
@@ -166,7 +166,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         return (
           <button className="devel-button pending" disabled title="Validating devel environment...">
             <span className="spinner"></span>
-            Pending ↗
+            Pending {renderExternalLinkIcon()}
           </button>
         );
       }
@@ -188,7 +188,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           title="Click to validate devel environment"
         >
           <span className="spinner"></span>
-          Pending ↗
+          Pending {renderExternalLinkIcon()}
         </button>
       );
     }
@@ -342,17 +342,31 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         onClick={() => window.open(productionUrl, '_blank', 'noopener,noreferrer')}
         title="Open Production Environment"
       >
-        Production ↗
+        Production {renderExternalLinkIcon()}
       </button>
     );
   };
+
+  const renderExternalLinkIcon = () => (
+    <svg 
+      className="external-link-icon" 
+      width="12" 
+      height="12" 
+      viewBox="0 0 16 16" 
+      fill="currentColor" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M9.37 2.47005V0.800049H15.2V6.63005H13.53V3.63005L6.77999 10.38L5.62 9.22005L12.37 2.47005H9.37Z"/>
+      <path d="M2.46999 13.5301H11.13V8.20007H12.8V13.2001C12.8 14.3001 11.9 15.2001 10.8 15.2001H2.79999C1.69999 15.2001 0.799988 14.3001 0.799988 13.2001V5.20007C0.799988 4.10007 1.69999 3.20007 2.79999 3.20007H7.79999V4.87007H2.46999V13.5301Z"/>
+    </svg>
+  );
 
   const renderTestButton = () => {
     const domain = item.domain;
     if (!domain || domain === 'undefined' || domain.trim() === '') {
       return null;
     }
-
+    
     const testEnvironment = item.test_environment;
     const isResidentHosting = Boolean(item.resident_hosting);
     
@@ -362,15 +376,15 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       }
     }
 
-    let buttonText = 'Test ↗';
+    let buttonText = 'Test';
     if (testEnvironment && testEnvironment !== '0') {
       if (typeof testEnvironment === 'string') {
         if (testEnvironment === 'Update Nightly') {
-          buttonText = 'Test (nightly) ↗';
+          buttonText = 'Test (nightly)';
         } else if (testEnvironment === 'Pause Updates') {
-          buttonText = 'Test (paused) ↗';
+          buttonText = 'Test (paused)';
         } else if (testEnvironment === 'Update Weekly') {
-          buttonText = 'Test (weekly) ↗';
+          buttonText = 'Test (weekly)';
         }
       }
     }
@@ -382,7 +396,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           disabled
           title="Test environment not available for this domain format"
         >
-          {buttonText}
+          {buttonText} {renderExternalLinkIcon()}
         </button>
       );
     }
@@ -400,7 +414,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         onClick={() => window.open(testUrl, '_blank', 'noopener,noreferrer')}
         title="Open Test Environment"
       >
-        {buttonText}
+        {buttonText} {renderExternalLinkIcon()}
       </button>
     );
   };
@@ -421,7 +435,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
               rel="noopener noreferrer"
               className="customer-link"
             >
-              #{item.id}
+              #{item.id} {renderExternalLinkIcon()}
             </a>
             <span className="total-users">{totalUsers} users</span>
             {item.itar_hosting_bc && (

@@ -1481,3 +1481,12 @@ body {
 .retry-button:hover {
   background-color: var(--accent-hover);
 }
+
+/* External link icon styling */
+.external-link-icon {
+  display: inline-block !important;
+  transition: all 0.2s;
+  width: 12px;
+  height: 12px;
+  color: inherit;
+}
