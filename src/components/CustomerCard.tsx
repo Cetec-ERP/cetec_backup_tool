@@ -376,7 +376,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       }
     }
 
-    let buttonText = 'Test';
+    let buttonText = 'Test ↗';
     if (testEnvironment && testEnvironment !== '0') {
       if (typeof testEnvironment === 'string') {
         if (testEnvironment === 'Update Nightly') {
